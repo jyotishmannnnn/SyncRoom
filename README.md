@@ -7,26 +7,60 @@ Create a room, share the code, talk face-to-face in up to 4K60 — then paste a 
 
 ---
 
-## Quick start
-
-```bash
-npm install       # installs all workspaces (shared, server, client)
-npm run dev       # server on :3001 + client on :5173 (proxied)
-```
-
-Open <http://localhost:5173>, create a room, open a second browser/incognito window and join with the code.
-
-**Production:**
-
-```bash
-npm run build     # builds server (tsup) + client (vite)
-npm start         # one Node process serves the SPA + signaling on :3001
-```
-
 ## Requirements
 
-- Node.js ≥ 20
-- A modern browser (Chrome/Edge recommended; Firefox and Safari supported)
+- **Node.js ≥ 20** (check with `node -v`)
+- **npm ≥ 9** (ships with Node 20; used for workspaces)
+- A modern browser — Chrome/Edge recommended; Firefox and Safari supported
+
+## Setup
+
+**1. Clone the repository**
+
+```bash
+git clone https://github.com/aditi1006/SyncRoom.git
+cd SyncRoom
+```
+
+**2. Install dependencies** (installs all three workspaces — `shared`, `server`, `client`)
+
+```bash
+npm install
+```
+
+**3. Configure environment variables** (optional for local dev — sensible defaults are used if omitted)
+
+```bash
+cp .env.example .env    # Windows PowerShell: Copy-Item .env.example .env
+```
+
+Then edit `.env`:
+
+| Variable                                        | Scope           | Purpose                                                              |
+| ----------------------------------------------- | --------------- | ------------------------------------------------------------------- |
+| `PORT`                                          | server          | Port the signaling/HTTP server listens on (default `3001`).         |
+| `CLIENT_ORIGIN`                                 | server          | CORS origin when the client is hosted separately.                   |
+| `VITE_SERVER_URL`                               | client (build)  | Socket server URL when not served from the same origin.             |
+| `VITE_TURN_URL` / `_USERNAME` / `_CREDENTIAL`   | client (build)  | TURN relay for strict-NAT peers — **strongly recommended in prod**. |
+
+**4. Start the dev servers**
+
+```bash
+npm run dev       # server on :3001 + client on :5173 (Vite proxies to the server)
+```
+
+Open <http://localhost:5173>, create a room, then open a second browser or incognito window and join with the room code.
+
+> **Note:** Camera/mic access requires a secure context. `localhost` counts as secure, so local dev works without HTTPS. When deploying, serve over HTTPS or WebRTC media will be blocked.
+
+## Production
+
+```bash
+npm run build     # builds shared + server (tsup) + client (vite)
+npm start         # one Node process serves the built SPA + signaling on :3001
+```
+
+See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for single-server vs. split deploys, TURN setup, and scaling.
 
 ## Scripts
 
