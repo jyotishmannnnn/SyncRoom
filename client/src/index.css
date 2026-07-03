@@ -95,3 +95,47 @@ body {
 .mirror {
   transform: scaleX(-1);
 }
+
+/* CSS fallback when the Fullscreen API is unavailable (e.g. iOS Safari). */
+.pseudo-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 90 !important;
+  border-radius: 0 !important;
+  background: black;
+}
+
+/* Cinema mode hides the pointer alongside the controls. */
+.cursor-idle,
+.cursor-idle * {
+  cursor: none !important;
+}
+
+/* Native-feeling range inputs for the cinema timeline/volume. */
+input[type='range'].cinema-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background:
+    linear-gradient(rgb(var(--accent)), rgb(var(--accent))) 0 / var(--fill, 0%) 100% no-repeat,
+    rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+}
+input[type='range'].cinema-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+input[type='range'].cinema-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}

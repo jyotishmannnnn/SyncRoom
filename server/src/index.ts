@@ -8,9 +8,10 @@ import { LIMITS } from '@syncroom/shared';
 import type { AppServer } from './handlers';
 import { registerHandlers } from './handlers';
 import { RoomManager } from './roomManager';
+import { makeOriginCheck, parseAllowedOrigins } from './cors';
 
 const PORT = Number(process.env.PORT ?? 3001);
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173';
+const ALLOWED_ORIGINS = parseAllowedOrigins(process.env.CLIENT_ORIGIN);
 
 const app = express();
 app.disable('x-powered-by');
@@ -33,7 +34,7 @@ const httpServer = createServer(app);
 
 const io: AppServer = new Server(httpServer, {
   cors: {
-    origin: [CLIENT_ORIGIN],
+    origin: makeOriginCheck(ALLOWED_ORIGINS),
     methods: ['GET', 'POST'],
   },
   // Attachments are relayed through the socket; allow cap + base64 overhead.

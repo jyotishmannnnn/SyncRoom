@@ -20,7 +20,10 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
-    sourcemap: true,
+    // Maps ship to production hosts otherwise (adds ~5 MB per deploy);
+    // vite build --sourcemap re-enables them for debugging sessions.
+    sourcemap: false,
+    reportCompressedSize: false,
     rollupOptions: {
       output: {
         // Heavy media engines load on demand; keep the core bundle lean.

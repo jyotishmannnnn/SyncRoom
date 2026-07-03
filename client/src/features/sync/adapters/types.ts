@@ -37,6 +37,13 @@ export interface PlayerAdapter {
   canSync(): boolean;
   canSeek(): boolean;
   canSetRate(): boolean;
+  /** Local audio control — never synchronized (each viewer owns their volume). */
+  setVolume(volume: number): void; // 0..1
+  getVolume(): number;
+  setMuted(muted: boolean): void;
+  isMuted(): boolean;
+  /** Toggle the provider's built-in control chrome (cinema bar takes over). */
+  setNativeControls(visible: boolean): void;
   isReady(): boolean;
   onEvent(cb: (ev: PlayerEvent) => void): void;
   destroy(): void;

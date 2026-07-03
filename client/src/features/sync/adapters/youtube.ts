@@ -11,6 +11,11 @@ interface YTPlayer {
   getDuration(): number;
   getPlaybackRate(): number;
   getPlayerState(): number;
+  setVolume(volume: number): void; // 0..100
+  getVolume(): number;
+  mute(): void;
+  unMute(): void;
+  isMuted(): boolean;
   destroy(): void;
 }
 interface YTNamespace {
@@ -160,6 +165,23 @@ export class YouTubeAdapter implements PlayerAdapter {
   }
   canSetRate(): boolean {
     return true;
+  }
+  setVolume(volume: number): void {
+    this.player?.setVolume(Math.round(Math.min(1, Math.max(0, volume)) * 100));
+  }
+  getVolume(): number {
+    return (this.player?.getVolume() ?? 100) / 100;
+  }
+  setMuted(muted: boolean): void {
+    if (muted) this.player?.mute();
+    else this.player?.unMute();
+  }
+  isMuted(): boolean {
+    return this.player?.isMuted() ?? false;
+  }
+  setNativeControls(_visible: boolean): void {
+    // The IFrame API only accepts `controls` at construction; toggling would
+    // reload the player and interrupt playback, so YouTube keeps its chrome.
   }
   getState(): PlaybackState {
     // YT.PlayerState: -1 unstarted, 0 ended, 1 playing, 2 paused, 3 buffering, 5 cued

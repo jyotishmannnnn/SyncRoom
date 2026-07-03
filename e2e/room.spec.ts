@@ -76,6 +76,31 @@ test('watch panel rejects unsupported links with specific errors', async ({ page
   await expect(page.getByRole('button', { name: /Leave call/ })).toBeVisible();
 });
 
+test('fullscreen toggles locally for page and cinema stage', async ({ page }) => {
+  const code = uniqueCode();
+  await createAndJoin(page, code, 'Host', true);
+
+  // Without media the toggle fullscreens the whole page.
+  await page.getByRole('button', { name: /Fullscreen \(F\)/ }).click();
+  await page.waitForFunction(() => document.fullscreenElement !== null);
+  await page.getByRole('button', { name: /Exit fullscreen \(F\)/ }).click();
+  await page.waitForFunction(() => document.fullscreenElement === null);
+
+  // With media active, F targets the cinema stage (the black player wrapper).
+  await page.getByRole('button', { name: /Watch together \(W\)/ }).click();
+  await page.getByLabel('Video link').fill('http://localhost:3100/e2e-missing.mp4');
+  await page.getByRole('button', { name: 'Play now' }).click();
+  await page.keyboard.press('Escape'); // close the panel
+  await page.keyboard.press('f');
+  await page.waitForFunction(
+    () => document.fullscreenElement?.classList.contains('bg-black') === true,
+  );
+  // The cinema bar lives inside the fullscreen element.
+  await expect(page.getByRole('button', { name: 'Exit fullscreen', exact: true })).toBeVisible();
+  await page.keyboard.press('f');
+  await page.waitForFunction(() => document.fullscreenElement === null);
+});
+
 test('joining a missing room shows a clear error', async ({ page }) => {
   await page.goto('/room/not-a-real-room');
   await expect(page.getByRole('heading', { name: 'Ready to join?' })).toBeVisible();

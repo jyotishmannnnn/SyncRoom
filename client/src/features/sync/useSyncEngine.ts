@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { socket } from '@/lib/socket';
 import { canSelfControl, isSelfHost, useRoomStore } from '@/store/room';
 import { SyncController, type ControllerPhase } from './SyncController';
@@ -18,11 +18,22 @@ import { SyncController, type ControllerPhase } from './SyncController';
  * - Queue auto-advance is performed by the host only, so a room full of
  *   controllers can never emit duplicate `queue:play` events.
  */
+export interface LocalPlayerFacade {
+  getPlayhead: () => { time: number; duration: number; seekable: boolean } | null;
+  setVolume: (volume: number) => void;
+  getVolume: () => number;
+  setMuted: (muted: boolean) => void;
+  isMuted: () => boolean;
+  setNativeControls: (visible: boolean) => void;
+}
+
 export function useSyncEngine(containerRef: RefObject<HTMLDivElement | null>): {
   driveFallback: boolean;
   playerReady: boolean;
   autoplayBlocked: boolean;
   resume: () => void;
+  /** Per-viewer controls for UI chrome (cinema bar) — never synchronized. */
+  player: LocalPlayerFacade;
 } {
   const syncState = useRoomStore((s) => s.syncState);
   const canControl = useRoomStore((s) => canSelfControl(s));
@@ -90,5 +101,17 @@ export function useSyncEngine(containerRef: RefObject<HTMLDivElement | null>): {
     controllerRef.current?.resume();
   }, []);
 
-  return { driveFallback, playerReady: phase === 'ready', autoplayBlocked, resume };
+  const player = useMemo<LocalPlayerFacade>(
+    () => ({
+      getPlayhead: () => controllerRef.current?.getPlayhead() ?? null,
+      setVolume: (v) => controllerRef.current?.setVolume(v),
+      getVolume: () => controllerRef.current?.getVolume() ?? 1,
+      setMuted: (m) => controllerRef.current?.setMuted(m),
+      isMuted: () => controllerRef.current?.isMuted() ?? false,
+      setNativeControls: (v) => controllerRef.current?.setNativeControls(v),
+    }),
+    [],
+  );
+
+  return { driveFallback, playerReady: phase === 'ready', autoplayBlocked, resume, player };
 }

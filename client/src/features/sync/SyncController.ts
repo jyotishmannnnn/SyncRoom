@@ -162,6 +162,34 @@ export class SyncController {
     this.opts.onSyncUnavailable();
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Local UI facade — powers the cinema bar. Everything here is         */
+  /* per-viewer (volume, playhead readout, chrome); nothing emits.       */
+  /* ------------------------------------------------------------------ */
+
+  getPlayhead(): { time: number; duration: number; seekable: boolean } | null {
+    const a = this.adapter;
+    if (!a?.isReady() || !a.canSync()) return null;
+    return { time: a.getCurrentTime(), duration: a.getDuration(), seekable: a.canSeek() };
+  }
+
+  setVolume(volume: number): void {
+    this.adapter?.setVolume(volume);
+  }
+  getVolume(): number {
+    return this.adapter?.getVolume() ?? 1;
+  }
+  setMuted(muted: boolean): void {
+    this.adapter?.setMuted(muted);
+  }
+  isMuted(): boolean {
+    return this.adapter?.isMuted() ?? false;
+  }
+  /** Hide/show the provider's own chrome while the cinema bar is active. */
+  setNativeControls(visible: boolean): void {
+    this.adapter?.setNativeControls(visible);
+  }
+
   /** User clicked the "click to play" overlay — a gesture is now available. */
   resume(): void {
     this.stalledPlays = 0;

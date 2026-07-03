@@ -70,6 +70,24 @@ class FakeAdapter implements PlayerAdapter {
   canSetRate(): boolean {
     return this.caps.rate;
   }
+  volume = 1;
+  muted = false;
+  nativeControls = true;
+  setVolume(v: number): void {
+    this.volume = v;
+  }
+  getVolume(): number {
+    return this.volume;
+  }
+  setMuted(m: boolean): void {
+    this.muted = m;
+  }
+  isMuted(): boolean {
+    return this.muted;
+  }
+  setNativeControls(v: boolean): void {
+    this.nativeControls = v;
+  }
   isReady(): boolean {
     return this.ready;
   }
@@ -283,6 +301,21 @@ describe('capability degradation', () => {
     vi.advanceTimersByTime(DRIFT_CHECK_INTERVAL_MS);
     expect(adapter.calls.filter((c) => c.startsWith('seek:'))).toHaveLength(0);
     expect(adapter.calls.filter((c) => c.startsWith('rate:'))).toHaveLength(0);
+  });
+});
+
+describe('local UI facade (cinema bar) never synchronizes', () => {
+  it('volume, mute, native-controls and playhead reads emit nothing', () => {
+    const { controller, adapter } = harness;
+    controller.setVolume(0.5);
+    controller.setMuted(true);
+    controller.setNativeControls(false);
+    const playhead = controller.getPlayhead();
+    expect(adapter.volume).toBe(0.5);
+    expect(adapter.muted).toBe(true);
+    expect(adapter.nativeControls).toBe(false);
+    expect(playhead).toEqual({ time: 0, duration: 600, seekable: true });
+    expect(emitted).toHaveLength(0);
   });
 });
 

@@ -1,0 +1,26 @@
+# Render Blueprint — deploys the Socket.IO signaling server on the free plan.
+# https://render.com/docs/blueprint-spec
+#
+# Free-plan notes:
+#   - The instance sleeps after ~15 min without traffic (first join then takes
+#     ~50 s to cold-start). Active WebSocket connections keep it awake; a free
+#     uptime pinger on /healthz (e.g. UptimeRobot, 5-min interval) removes the
+#     cold start entirely and fits in the 750 free instance-hours/month.
+#   - Rooms are in-memory by design; a sleep/restart simply lets clients
+#     auto-rejoin with their stable identity.
+services:
+  - type: web
+    name: syncroom-server
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build -w server
+    startCommand: node server/dist/index.js
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22.14.0
+      # Comma-separated allow-list. Keep your production domain exact and the
+      # wildcard so Vercel preview deployments can connect too.
+      - key: CLIENT_ORIGIN
+        value: https://YOUR-APP.vercel.app,https://*.vercel.app

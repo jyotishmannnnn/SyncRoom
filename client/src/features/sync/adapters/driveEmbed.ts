@@ -54,6 +54,15 @@ export class DriveEmbedAdapter implements PlayerAdapter {
   canSetRate(): boolean {
     return false;
   }
+  setVolume(_volume: number): void {}
+  getVolume(): number {
+    return 1;
+  }
+  setMuted(_muted: boolean): void {}
+  isMuted(): boolean {
+    return false;
+  }
+  setNativeControls(_visible: boolean): void {}
   isReady(): boolean {
     return this.ready;
   }

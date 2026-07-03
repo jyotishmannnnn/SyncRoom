@@ -117,6 +117,21 @@ export class Html5Adapter implements PlayerAdapter {
   canSetRate(): boolean {
     return this.canSeek(); // rate control is meaningless on live edges too
   }
+  setVolume(volume: number): void {
+    if (this.video) this.video.volume = Math.min(1, Math.max(0, volume));
+  }
+  getVolume(): number {
+    return this.video?.volume ?? 1;
+  }
+  setMuted(muted: boolean): void {
+    if (this.video) this.video.muted = muted;
+  }
+  isMuted(): boolean {
+    return this.video?.muted ?? false;
+  }
+  setNativeControls(visible: boolean): void {
+    if (this.video) this.video.controls = visible;
+  }
   getState(): PlaybackState {
     const v = this.video;
     if (!v || v.readyState === 0) return 'unstarted';

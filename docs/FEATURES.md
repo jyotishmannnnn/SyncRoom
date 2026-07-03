@@ -50,6 +50,14 @@ Host-authoritative sync (full state machine in `ARCHITECTURE.md`): if the host p
 
 **Queue**: anyone can add links; the controller plays/removes them; auto-advances when a video ends. **Shared controls**: host can allow everyone to control playback (`host-only` / `everyone`).
 
+### Cinema fullscreen
+
+Enter/exit via the fullscreen buttons, double-click on the stage, or `F`; `Esc` exits (native). Fullscreen is **strictly local** — it never emits a socket event and never affects other participants — and it survives provider switches (YouTube → Drive → MP4) because the stage wrapper, not the player, is fullscreened.
+
+In cinema mode: the video fills the screen (aspect preserved), page chrome disappears, and a YouTube-style floating bar (play/pause for controllers, timeline with scrubbing, local volume/mute, chat, participants, leave, fullscreen toggle) fades after 3 s of inactivity — the cursor hides with it and both return on mouse movement. Webcam thumbnails float in a draggable cluster; chat and participants open as overlays without leaving fullscreen. The same bar is available outside fullscreen as a hover overlay, which also gives guests volume control.
+
+Browsers without the Fullscreen API (e.g. iOS Safari) degrade to a CSS pseudo-fullscreen with identical chrome; `Esc` is handled manually there.
+
 ### Google Drive — limitations (read this)
 
 **Accepted link shapes** (the file id is detected automatically): `drive.google.com/file/d/<id>/view|preview|edit`, `drive.google.com/open?id=<id>`, `drive.google.com/uc?id=<id>`, `docs.google.com/uc?id=<id>`, `drive.usercontent.google.com/download?id=<id>`. Folder links are rejected with an explanation (share the file itself, not its folder).
