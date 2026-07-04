@@ -33,22 +33,10 @@ export function SettingsModal({ open, onClose, onDeviceChange, onReacquire }: Se
     if (open) void refresh();
   }, [open, refresh]);
 
-  // Always offer an explicit "Automatic" choice (value ''), so the controlled
-  // <select> value always matches an option — otherwise a single-device machine
-  // (or a stale/absent stored id) leaves the select on a value no option has,
-  // and picking the only shown device fires no change event. Pre-permission
-  // placeholder entries (empty deviceId) are dropped so they don't collide.
-  const deviceOptions = (list: MediaDeviceInfo[], fallback: string) => [
-    { value: '', label: `Automatic (default ${fallback.toLowerCase()})` },
-    ...list
-      .filter((d) => d.deviceId)
-      .map((d, i) => ({ value: d.deviceId, label: d.label || `${fallback} ${i + 1}` })),
-  ];
-
-  // Reconcile a stored id against what's actually present; fall back to
-  // Automatic ('') when the device is gone or nothing was ever chosen.
-  const resolveDevice = (id: string | null, list: MediaDeviceInfo[]) =>
-    id && list.some((d) => d.deviceId === id) ? id : '';
+  const deviceOptions = (list: MediaDeviceInfo[], fallback: string) =>
+    list.length > 0
+      ? list.map((d, i) => ({ value: d.deviceId, label: d.label || `${fallback} ${i + 1}` }))
+      : [{ value: '', label: `Default ${fallback.toLowerCase()}` }];
 
   return (
     <Modal open={open} onClose={onClose} title="Settings" wide>
@@ -79,31 +67,25 @@ export function SettingsModal({ open, onClose, onDeviceChange, onReacquire }: Se
           </h3>
           <Select
             label="Camera"
-            value={resolveDevice(settings.cameraId, cameras)}
+            value={settings.cameraId ?? ''}
             onChange={(e) => {
-              const id = e.target.value || null;
-              settings.update({ cameraId: id });
-              // A concrete device swaps just that track; Automatic re-captures
-              // with the browser default so the choice actually takes effect.
-              if (id) onDeviceChange?.('camera', id);
-              else onReacquire?.();
+              settings.update({ cameraId: e.target.value || null });
+              if (e.target.value) onDeviceChange?.('camera', e.target.value);
             }}
             options={deviceOptions(cameras, 'Camera')}
           />
           <Select
             label="Microphone"
-            value={resolveDevice(settings.micId, microphones)}
+            value={settings.micId ?? ''}
             onChange={(e) => {
-              const id = e.target.value || null;
-              settings.update({ micId: id });
-              if (id) onDeviceChange?.('microphone', id);
-              else onReacquire?.();
+              settings.update({ micId: e.target.value || null });
+              if (e.target.value) onDeviceChange?.('microphone', e.target.value);
             }}
             options={deviceOptions(microphones, 'Microphone')}
           />
           <Select
             label="Speaker"
-            value={resolveDevice(settings.speakerId, speakers)}
+            value={settings.speakerId ?? ''}
             onChange={(e) => settings.update({ speakerId: e.target.value || null })}
             options={deviceOptions(speakers, 'Speaker')}
             disabled={!CAN_SET_SINK}

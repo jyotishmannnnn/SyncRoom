@@ -54,19 +54,10 @@ export function useLocalMedia(): LocalMedia {
   }, []);
 
   const acquire = useCallback(async (): Promise<MediaStream | null> => {
-    // Preserve mute/camera-off state across a re-acquire (quality, frame-rate,
-    // audio-processing, or device changes) — fresh tracks default to enabled.
-    const prev = streamRef.current;
-    const prevVideoEnabled = prev?.getVideoTracks()[0]?.enabled ?? true;
-    const prevAudioEnabled = prev?.getAudioTracks()[0]?.enabled ?? true;
-    prev?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((t) => t.stop());
     try {
       const media = await navigator.mediaDevices.getUserMedia(buildConstraints());
-      media.getVideoTracks().forEach((t) => {
-        t.contentHint = 'motion';
-        t.enabled = prevVideoEnabled;
-      });
-      media.getAudioTracks().forEach((t) => (t.enabled = prevAudioEnabled));
+      media.getVideoTracks().forEach((t) => (t.contentHint = 'motion'));
       streamRef.current = media;
       setStream(media);
       setError(null);
@@ -77,7 +68,6 @@ export function useLocalMedia(): LocalMedia {
         const audioOnly = await navigator.mediaDevices.getUserMedia({
           audio: (buildConstraints().audio ?? true) as MediaTrackConstraints,
         });
-        audioOnly.getAudioTracks().forEach((t) => (t.enabled = prevAudioEnabled));
         streamRef.current = audioOnly;
         setStream(audioOnly);
         setError(classifyError(err));
