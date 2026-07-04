@@ -16,6 +16,10 @@ export default defineConfig({
         target: 'http://localhost:3001',
         ws: true,
       },
+      // Google Drive streaming proxy (keeps Drive playback synced in dev).
+      '/drive': {
+        target: 'http://localhost:3001',
+      },
     },
   },
   build: {

@@ -6,6 +6,7 @@ import { io as connect, type Socket } from 'socket.io-client';
 import type {
   ClientToServerEvents,
   JoinResult,
+  RoomSnapshot,
   ServerToClientEvents,
   SyncState,
 } from '@syncroom/shared';
@@ -168,6 +169,20 @@ describe('room lifecycle over sockets', () => {
     g1.emit('room:kick', created.selfId!);
     await new Promise((r) => setTimeout(r, 150));
     expect(hostKicked).toBe(false);
+  });
+
+  it('broadcasts the mirror-video presence flag to everyone', async () => {
+    const host = client();
+    const guest = client();
+    await join(host, { code: 'mirror-room', name: 'Host', key: 'mirror-host-01', create: true });
+    const gJoin = await join(guest, { code: 'mirror-room', name: 'G', key: 'mirror-guest-01' });
+    expect(gJoin.ok).toBe(true);
+
+    // Host turns mirroring on; the guest must see the host's flag flip.
+    const next = once<RoomSnapshot>(guest, 'room:state');
+    host.emit('presence:update', { mirrored: true });
+    const room = await next;
+    expect(room.participants.find((p) => p.name === 'Host')?.mirrored).toBe(true);
   });
 
   it('enforces lock and duplicate keys', async () => {

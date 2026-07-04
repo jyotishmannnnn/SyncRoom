@@ -2,6 +2,7 @@ import type { Participant } from '@syncroom/shared';
 import type { RemoteFeed } from '@/features/call/usePeerConnections';
 import type { PeerStats } from '@/features/call/useCallStats';
 import { useRoomStore } from '@/store/room';
+import { useSettings } from '@/store/settings';
 import { cn } from '@/lib/utils';
 import { VideoTile } from './VideoTile';
 
@@ -41,6 +42,11 @@ export function VideoGrid({
   const micOn = useRoomStore((s) => s.micOn);
   const cameraOn = useRoomStore((s) => s.cameraOn);
   const participants = useRoomStore((s) => s.room?.participants ?? []);
+  // Self tile mirrors from the local setting for instant feedback; remote tiles
+  // mirror from each participant's broadcast flag (so everyone sees your choice).
+  const mirrorSelf = useSettings((s) => s.mirrorVideo);
+  const mirroredFor = (t: Tile): boolean =>
+    t.isSelf ? mirrorSelf : (t.participant?.mirrored ?? false);
 
   const byId = new Map(participants.map((p) => [p.id, p]));
   const self = selfId ? byId.get(selfId) : undefined;
@@ -107,6 +113,7 @@ export function VideoGrid({
             micOn={t.isSelf ? micOn : t.participant?.micOn}
             cameraOn={t.isSelf ? cameraOn : t.participant?.cameraOn}
             isScreen={t.isScreen}
+            mirrored={mirroredFor(t)}
             stats={t.peerId ? stats[t.peerId] : undefined}
             className="aspect-video w-44 shrink-0 lg:w-full"
           />
@@ -138,6 +145,7 @@ export function VideoGrid({
               micOn={t.isSelf ? micOn : t.participant?.micOn}
               cameraOn={t.isSelf ? cameraOn : t.participant?.cameraOn}
               isScreen={t.isScreen}
+              mirrored={mirroredFor(t)}
               stats={t.peerId ? stats[t.peerId] : undefined}
               className="aspect-video w-40 shrink-0 lg:w-full"
             />
@@ -159,6 +167,7 @@ export function VideoGrid({
           micOn={t.isSelf ? micOn : t.participant?.micOn}
           cameraOn={t.isSelf ? cameraOn : t.participant?.cameraOn}
           isScreen={t.isScreen}
+          mirrored={mirroredFor(t)}
           stats={t.peerId ? stats[t.peerId] : undefined}
           className="min-h-0"
         />

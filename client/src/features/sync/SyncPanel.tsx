@@ -40,7 +40,7 @@ export function SyncPanel() {
       <form onSubmit={(e) => submit(e, false)} className="flex flex-col gap-2">
         <Input
           label="Video link"
-          placeholder="youtube.com/… · drive.google.com/… · https://…/movie.mp4"
+          placeholder="youtube.com/… or drive.google.com/…"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           error={error || undefined}

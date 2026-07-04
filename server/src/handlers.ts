@@ -286,6 +286,7 @@ export function registerHandlers(
       if (typeof flags.micOn === 'boolean') p.micOn = flags.micOn;
       if (typeof flags.cameraOn === 'boolean') p.cameraOn = flags.cameraOn;
       if (typeof flags.screenSharing === 'boolean') p.screenSharing = flags.screenSharing;
+      if (typeof flags.mirrored === 'boolean') p.mirrored = flags.mirrored;
       broadcastState(ctx.room);
     });
 

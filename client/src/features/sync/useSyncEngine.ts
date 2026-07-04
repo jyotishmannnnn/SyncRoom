@@ -60,7 +60,7 @@ export function useSyncEngine(containerRef: RefObject<HTMLDivElement | null>): {
           .getState()
           .toast(
             'info',
-            'Google Drive blocked direct streaming — switched to Drive’s player (not synced).',
+            'This Google Drive file can’t be synced — playing in Drive’s player, so each person controls their own playback.',
             'drive-fallback',
           );
       },

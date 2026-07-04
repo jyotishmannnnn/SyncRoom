@@ -52,6 +52,7 @@ export function RoomPage() {
   const setPanel = useRoomStore((s) => s.setPanel);
   const setMedia = useRoomStore((s) => s.setMedia);
   const hasMedia = useRoomStore((s) => s.syncState?.media != null);
+  const mirrorVideo = useSettings((s) => s.mirrorVideo);
 
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState('');
@@ -155,9 +156,14 @@ export function RoomPage() {
      Presence is emitted only when a flag actually transitions — never as a
      side effect of unrelated re-renders (that once caused an emit/broadcast
      feedback loop and rate-limit toast spam). */
-  const sentPresence = useRef<{ micOn: boolean | null; cameraOn: boolean | null }>({
+  const sentPresence = useRef<{
+    micOn: boolean | null;
+    cameraOn: boolean | null;
+    mirrored: boolean | null;
+  }>({
     micOn: null,
     cameraOn: null,
+    mirrored: null,
   });
   useEffect(() => {
     local.setTrackEnabled('audio', micOn);
@@ -173,9 +179,17 @@ export function RoomPage() {
       socket.emit('presence:update', { cameraOn });
     }
   }, [cameraOn, joined, local]);
+  /* Broadcast the "mirror my video" preference so everyone renders this
+     participant's tile flipped (or not). Emitted on join and on every change. */
+  useEffect(() => {
+    if (joined && sentPresence.current.mirrored !== mirrorVideo) {
+      sentPresence.current.mirrored = mirrorVideo;
+      socket.emit('presence:update', { mirrored: mirrorVideo });
+    }
+  }, [mirrorVideo, joined]);
   /* Reset the change tracker when leaving so a rejoin re-announces flags. */
   useEffect(() => {
-    if (!joined) sentPresence.current = { micOn: null, cameraOn: null };
+    if (!joined) sentPresence.current = { micOn: null, cameraOn: null, mirrored: null };
   }, [joined]);
 
   const stopShare = useCallback((): void => {
@@ -351,6 +365,11 @@ export function RoomPage() {
           const op =
             kind === 'camera' ? local.switchCamera(deviceId) : local.switchMicrophone(deviceId);
           void op.then(() => syncAllTracks());
+        }}
+        onReacquire={() => {
+          // Re-capture with the new resolution/frame-rate/audio-processing and
+          // push the fresh tracks to every peer (also re-applies encoder bitrate).
+          void local.acquire().then(() => syncAllTracks());
         }}
       />
       <Toasts />

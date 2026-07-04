@@ -22,9 +22,9 @@ export function PlayerStage() {
       {driveFallback && (
         <div className="glass z-10 flex items-center gap-2 px-4 py-2 text-xs text-warning">
           <AlertTriangle size={14} className="shrink-0" />
-          Google Drive blocked direct streaming for this file, so it plays in Drive's own player.
-          Playback is NOT synchronized in this mode — press play yourself. Details:
-          docs/FEATURES.md.
+          This Google Drive file can’t be synced — Drive’s own player has no controls we can drive,
+          so everyone presses play themselves. For synced playback, make sure it’s shared “Anyone
+          with the link”, or use a direct MP4, YouTube or Vimeo link.
         </div>
       )}
       {!playerReady && (

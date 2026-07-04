@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@syncroom/shared": "*",
+    "@vimeo/player": "^2.30.4",
     "clsx": "^2.1.1",
     "dashjs": "^4.7.4",
     "hls.js": "^1.5.20",

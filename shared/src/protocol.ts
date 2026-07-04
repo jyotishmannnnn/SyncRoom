@@ -39,6 +39,7 @@ export interface ClientToServerEvents {
     micOn?: boolean;
     cameraOn?: boolean;
     screenSharing?: boolean;
+    mirrored?: boolean;
   }) => void;
 
   signal: (payload: SignalPayload) => void;

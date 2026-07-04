@@ -8,6 +8,7 @@ import { LIMITS } from '@syncroom/shared';
 import type { AppServer } from './handlers';
 import { registerHandlers } from './handlers';
 import { RoomManager } from './roomManager';
+import { driveProxy } from './driveProxy';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173';
@@ -18,6 +19,11 @@ app.disable('x-powered-by');
 app.get('/healthz', (_req, res) => {
   res.json({ ok: true, uptime: process.uptime() });
 });
+
+// Streams a public Google Drive file so it plays in the synced HTML5 player
+// instead of Drive's un-syncable preview iframe. Registered before the SPA
+// catch-all so it isn't swallowed by the index.html fallback.
+app.get('/drive/:id', driveProxy);
 
 // In production the server also serves the built SPA — one process, one port.
 const dirname = path.dirname(fileURLToPath(import.meta.url));

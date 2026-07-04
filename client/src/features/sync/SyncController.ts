@@ -3,6 +3,8 @@ import { correctionFor, DRIFT_CHECK_INTERVAL_MS, expectedTime } from '@syncroom/
 import { socket, serverNow } from '@/lib/socket';
 import type { PlaybackState, PlayerAdapter, PlayerEvent } from './adapters/types';
 import { YouTubeAdapter } from './adapters/youtube';
+import { VimeoAdapter } from './adapters/vimeo';
+import { TwitchAdapter } from './adapters/twitch';
 import { Html5Adapter } from './adapters/html5';
 import { DriveEmbedAdapter } from './adapters/driveEmbed';
 import { useSyncDebug } from './debug';
@@ -56,6 +58,10 @@ function adapterFor(media: MediaItem): PlayerAdapter {
   switch (media.kind) {
     case 'youtube':
       return new YouTubeAdapter();
+    case 'vimeo':
+      return new VimeoAdapter();
+    case 'twitch':
+      return new TwitchAdapter();
     case 'drive-embed':
       return new DriveEmbedAdapter();
     default:

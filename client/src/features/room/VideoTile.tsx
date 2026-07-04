@@ -12,6 +12,8 @@ export interface VideoTileProps {
   micOn?: boolean;
   cameraOn?: boolean;
   isScreen?: boolean;
+  /** This participant chose to flip their video — shown mirrored to everyone. */
+  mirrored?: boolean;
   stats?: PeerStats;
   className?: string;
 }
@@ -26,12 +28,12 @@ export function VideoTile({
   micOn = true,
   cameraOn = true,
   isScreen = false,
+  mirrored = false,
   stats,
   className,
 }: VideoTileProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const speakerId = useSettings((s) => s.speakerId);
-  const mirrorVideo = useSettings((s) => s.mirrorVideo);
   const showStats = useSettings((s) => s.showStats);
   const [pipActive, setPipActive] = useState(false);
 
@@ -116,7 +118,7 @@ export function VideoTile({
         className={cn(
           'h-full w-full',
           isScreen ? 'object-contain bg-black' : 'object-cover',
-          isSelf && !isScreen && mirrorVideo && 'mirror',
+          mirrored && !isScreen && 'mirror',
           !showVideo && 'invisible',
         )}
       />

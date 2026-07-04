@@ -15,11 +15,17 @@ const CAN_SET_SINK =
 export interface SettingsModalProps {
   open: boolean;
   onClose: () => void;
-  /** Applies camera/mic/quality changes to the live call. */
+  /** Switches a single camera/mic device on the live call. */
   onDeviceChange?: (kind: 'camera' | 'microphone', deviceId: string) => void;
+  /**
+   * Re-acquires local media so resolution / frame-rate / audio-processing
+   * changes apply to the live call immediately (they're read from settings at
+   * capture time). Called after those change and after Reset.
+   */
+  onReacquire?: () => void;
 }
 
-export function SettingsModal({ open, onClose, onDeviceChange }: SettingsModalProps) {
+export function SettingsModal({ open, onClose, onDeviceChange, onReacquire }: SettingsModalProps) {
   const settings = useSettings();
   const { cameras, microphones, speakers, refresh } = useMediaDevices();
 
@@ -96,7 +102,10 @@ export function SettingsModal({ open, onClose, onDeviceChange }: SettingsModalPr
           <Select
             label="Resolution (upper bound)"
             value={settings.quality}
-            onChange={(e) => settings.update({ quality: e.target.value as QualityPreset })}
+            onChange={(e) => {
+              settings.update({ quality: e.target.value as QualityPreset });
+              onReacquire?.();
+            }}
             options={[
               { value: '720p', label: '720p — light on bandwidth' },
               { value: '1080p', label: '1080p — recommended' },
@@ -107,15 +116,17 @@ export function SettingsModal({ open, onClose, onDeviceChange }: SettingsModalPr
           <Select
             label="Frame rate"
             value={String(settings.frameRate)}
-            onChange={(e) => settings.update({ frameRate: Number(e.target.value) as 30 | 60 })}
+            onChange={(e) => {
+              settings.update({ frameRate: Number(e.target.value) as 30 | 60 });
+              onReacquire?.();
+            }}
             options={[
               { value: '30', label: '30 fps' },
               { value: '60', label: '60 fps — smooth motion' },
             ]}
           />
           <p className="text-xs text-ink-faint">
-            Resolution and frame-rate changes apply the next time the camera restarts (toggle it
-            off/on in-call).
+            Resolution and frame-rate apply live; your camera briefly re-initializes.
           </p>
         </section>
 
@@ -125,13 +136,19 @@ export function SettingsModal({ open, onClose, onDeviceChange }: SettingsModalPr
           </h3>
           <Switch
             checked={settings.noiseSuppression}
-            onChange={(v) => settings.update({ noiseSuppression: v })}
+            onChange={(v) => {
+              settings.update({ noiseSuppression: v });
+              onReacquire?.();
+            }}
             label="Noise suppression"
             description="Filters keyboard, fans and background noise"
           />
           <Switch
             checked={settings.echoCancellation}
-            onChange={(v) => settings.update({ echoCancellation: v })}
+            onChange={(v) => {
+              settings.update({ echoCancellation: v });
+              onReacquire?.();
+            }}
             label="Echo cancellation"
             description="Prevents your speakers feeding back into your mic"
           />
@@ -143,7 +160,7 @@ export function SettingsModal({ open, onClose, onDeviceChange }: SettingsModalPr
             checked={settings.mirrorVideo}
             onChange={(v) => settings.update({ mirrorVideo: v })}
             label="Mirror my video"
-            description="Flip your own self-view like a mirror (only you see this)"
+            description="Flip your video horizontally for everyone in the call"
           />
           <Switch
             checked={settings.startMicOff}
@@ -197,7 +214,14 @@ export function SettingsModal({ open, onClose, onDeviceChange }: SettingsModalPr
 
       <div className="mt-5 flex items-center justify-between gap-3 border-t border-line pt-4">
         <p className="text-xs text-ink-faint">Settings are saved on this device.</p>
-        <Button variant="secondary" size="sm" onClick={() => settings.reset()}>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            settings.reset();
+            onReacquire?.();
+          }}
+        >
           <RotateCcw size={14} /> Reset to defaults
         </Button>
       </div>

@@ -20,11 +20,11 @@ describe('parseMediaUrl', () => {
     expect(parseMediaUrl('https://evil-youtube.com/watch?v=dQw4w9WgXcQ')?.kind).not.toBe('youtube');
   });
 
-  it('parses Google Drive share links into direct-download URLs', () => {
+  it('parses Google Drive share links into the same-origin stream proxy path', () => {
     const m = parseMediaUrl('https://drive.google.com/file/d/1a2B3c4D5e6F7g8H9/view?usp=sharing');
     expect(m?.kind).toBe('drive');
     expect(m?.providerId).toBe('1a2B3c4D5e6F7g8H9');
-    expect(m?.url).toContain('export=download');
+    expect(m?.url).toBe('/drive/1a2B3c4D5e6F7g8H9');
     expect(driveEmbedUrl('1a2B3c4D5e6F7g8H9')).toContain('/preview');
   });
 
@@ -67,6 +67,69 @@ describe('classifyMediaUrl — Drive URL coverage', () => {
   it('rejects Drive folders with a specific reason', () => {
     const r = classifyMediaUrl('https://drive.google.com/drive/folders/1AbCdEfGhIjKl');
     expect(r).toEqual({ ok: false, reason: 'drive-not-a-file' });
+  });
+});
+
+describe('classifyMediaUrl — Vimeo', () => {
+  it('parses standard, unlisted and player Vimeo URLs', () => {
+    expect(parseMediaUrl('https://vimeo.com/123456789')?.kind).toBe('vimeo');
+    expect(parseMediaUrl('https://vimeo.com/123456789')?.providerId).toBe('123456789');
+    // Unlisted video: id + privacy hash in the path.
+    const unlisted = parseMediaUrl('https://vimeo.com/123456789/abcdef1234');
+    expect(unlisted?.providerId).toBe('123456789');
+    expect(unlisted?.url).toBe('https://vimeo.com/123456789/abcdef1234');
+    // Player embed URL with the hash in the query string.
+    expect(parseMediaUrl('https://player.vimeo.com/video/123456789?h=abcdef1234')?.kind).toBe(
+      'vimeo',
+    );
+    // Channel / group nesting still resolves the numeric id.
+    expect(parseMediaUrl('https://vimeo.com/channels/staffpicks/123456789')?.providerId).toBe(
+      '123456789',
+    );
+  });
+
+  it('rejects Vimeo links without a video id', () => {
+    expect(classifyMediaUrl('https://vimeo.com/channels/staffpicks')).toEqual({
+      ok: false,
+      reason: 'vimeo-no-video',
+    });
+  });
+});
+
+describe('classifyMediaUrl — Twitch', () => {
+  it('detects VODs, channels and the player embed', () => {
+    const vod = classifyMediaUrl('https://www.twitch.tv/videos/123456789');
+    expect(vod.ok && vod.media.kind).toBe('twitch');
+    expect(vod.ok && vod.media.providerId).toBe('video:123456789');
+
+    const live = classifyMediaUrl('https://twitch.tv/somestreamer');
+    expect(live.ok && live.media.providerId).toBe('channel:somestreamer');
+
+    const player = classifyMediaUrl('https://player.twitch.tv/?video=v123456789&parent=x');
+    expect(player.ok && player.media.providerId).toBe('video:123456789');
+  });
+
+  it('rejects Twitch clips and section pages', () => {
+    expect(classifyMediaUrl('https://clips.twitch.tv/SomeClipSlug')).toEqual({
+      ok: false,
+      reason: 'twitch-no-video',
+    });
+    expect(classifyMediaUrl('https://www.twitch.tv/directory')).toEqual({
+      ok: false,
+      reason: 'twitch-no-video',
+    });
+  });
+});
+
+describe('classifyMediaUrl — DRM streaming services', () => {
+  it('rejects Netflix, Prime Video and Disney+ with a clear reason', () => {
+    for (const link of [
+      'https://www.netflix.com/watch/80100172',
+      'https://www.primevideo.com/detail/0ABCDEFGH',
+      'https://www.disneyplus.com/video/abc-123',
+    ]) {
+      expect(classifyMediaUrl(link)).toEqual({ ok: false, reason: 'drm-unsupported' });
+    }
   });
 });
 

@@ -13,10 +13,20 @@ export interface Participant {
   micOn: boolean;
   cameraOn: boolean;
   screenSharing: boolean;
+  /** Whether this participant's camera tile is shown flipped for everyone. */
+  mirrored: boolean;
   joinedAt: number;
 }
 
-export type MediaKind = 'youtube' | 'file' | 'hls' | 'dash' | 'drive' | 'drive-embed';
+export type MediaKind =
+  | 'youtube'
+  | 'vimeo'
+  | 'twitch'
+  | 'file'
+  | 'hls'
+  | 'dash'
+  | 'drive'
+  | 'drive-embed';
 
 export interface MediaItem {
   id: string;

@@ -70,6 +70,7 @@ export class Room {
         micOn: true,
         cameraOn: true,
         screenSharing: false,
+        mirrored: false,
         joinedAt: this.now(),
       },
     };
