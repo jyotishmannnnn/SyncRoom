@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Crown, MicOff, PictureInPicture2 } from 'lucide-react';
 import { cn, initials } from '@/lib/utils';
 import { useSettings } from '@/store/settings';
@@ -33,6 +33,7 @@ export function VideoTile({
   const speakerId = useSettings((s) => s.speakerId);
   const mirrorVideo = useSettings((s) => s.mirrorVideo);
   const showStats = useSettings((s) => s.showStats);
+  const [pipActive, setPipActive] = useState(false);
 
   useEffect(() => {
     const el = videoRef.current;
@@ -52,21 +53,31 @@ export function VideoTile({
 
   const showVideo = stream !== null && (cameraOn || isScreen);
 
-  /* Keep the tile playing across PiP transitions. Some browsers pause the
-     inline element when it enters/leaves the PiP window; a MediaStream tile
-     that isn't playing opens a *paused* PiP window, which reads as "PiP
-     paused my video". Re-assert playback whenever the state changes. */
+  /* Track PiP so we can hide the inline element while it is mirrored to the
+     PiP window — that suppresses the browser's big "Playing in picture-in-
+     picture" placeholder text (it's painted inside the source <video>). We
+     also re-assert playback across the transition: some browsers pause the
+     inline element, and a MediaStream tile that isn't playing opens a paused
+     PiP window. */
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
     const resume = (): void => {
       if (el.paused) void el.play().catch(() => {});
     };
-    el.addEventListener('enterpictureinpicture', resume);
-    el.addEventListener('leavepictureinpicture', resume);
+    const onEnter = (): void => {
+      setPipActive(true);
+      resume();
+    };
+    const onLeave = (): void => {
+      setPipActive(false);
+      resume();
+    };
+    el.addEventListener('enterpictureinpicture', onEnter);
+    el.addEventListener('leavepictureinpicture', onLeave);
     return () => {
-      el.removeEventListener('enterpictureinpicture', resume);
-      el.removeEventListener('leavepictureinpicture', resume);
+      el.removeEventListener('enterpictureinpicture', onEnter);
+      el.removeEventListener('leavepictureinpicture', onLeave);
     };
   }, []);
 
@@ -109,11 +120,19 @@ export function VideoTile({
           !showVideo && 'invisible',
         )}
       />
-      {!showVideo && (
-        <div className="absolute inset-0 flex items-center justify-center">
+      {/* Opaque cover shown for camera-off tiles and — crucially — while the
+          tile is in PiP. Covering (rather than hiding) the still-visible
+          <video> masks the browser's big "Playing in picture-in-picture"
+          text without ever detaching rendering, so closing PiP snaps back
+          instantly instead of lingering on a placeholder. */}
+      {(!showVideo || pipActive) && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-surface-overlay">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent/20 text-xl font-semibold text-accent">
             {initials(name) || '?'}
           </div>
+          {pipActive && showVideo && (
+            <span className="text-xs text-ink-faint">In picture-in-picture</span>
+          )}
         </div>
       )}
 
