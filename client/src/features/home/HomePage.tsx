@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/Logo';
+import { VideoBackground } from '@/components/VideoBackground';
 
 const FEATURES = [
   {
@@ -59,6 +60,7 @@ export function HomePage() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden">
+      <VideoBackground />
       {/* Soft, off-center cobalt washes, subtle rather than a centered neon blob. */}
       <div
         aria-hidden
@@ -71,7 +73,7 @@ export function HomePage() {
 
       <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <span className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-white">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-onaccent">
             <Logo size={20} title="" />
           </span>
           <span className="font-display text-xl font-semibold tracking-tight">Havnn</span>
@@ -82,7 +84,7 @@ export function HomePage() {
       <main className="relative z-10 mx-auto max-w-6xl px-6 pb-16">
         <section className="mx-auto max-w-2xl pt-10 text-center sm:pt-20">
           <h1 className="animate-slide-up font-display text-5xl font-medium leading-[1.05] tracking-tight sm:text-7xl">
-            Meet, share and <span className="italic text-accent">watch together</span>
+            Meet, share and <span className="italic text-gold">watch together</span>
           </h1>
           <p className="mx-auto mt-5 max-w-lg animate-slide-up text-base leading-relaxed text-ink-dim sm:text-lg">
             High-fidelity video calls with perfectly synchronized playback. Create a room, share the
@@ -157,7 +159,7 @@ export function HomePage() {
         <section className="mx-auto mt-16 grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map((f) => (
             <div key={f.title} className="rounded-2xl border border-line bg-surface-raised/50 p-5">
-              <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/15 text-accent">
+              <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-gold/15 text-gold">
                 {f.icon}
               </span>
               <h3 className="text-sm font-semibold">{f.title}</h3>

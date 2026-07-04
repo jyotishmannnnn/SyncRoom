@@ -8,12 +8,12 @@ import {
   SignalLow,
   SignalMedium,
   Users,
-  Video,
 } from 'lucide-react';
 import { useRoomStore } from '@/store/room';
 import { useSettings } from '@/store/settings';
 import type { PeerStats } from '@/features/call/useCallStats';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Logo } from '@/components/Logo';
 import { cn } from '@/lib/utils';
 
 export function TopBar({
@@ -55,8 +55,8 @@ export function TopBar({
   return (
     <header className="flex items-center justify-between gap-3 px-4 py-3">
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-white">
-          <Video size={16} />
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-onaccent">
+          <Logo size={18} title="Havnn" />
         </span>
         <button
           type="button"

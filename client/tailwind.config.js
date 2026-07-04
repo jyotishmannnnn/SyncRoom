@@ -19,6 +19,8 @@ export default {
           DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
           hover: 'rgb(var(--accent-hover) / <alpha-value>)',
         },
+        onaccent: 'rgb(var(--on-accent) / <alpha-value>)',
+        gold: 'rgb(var(--gold) / <alpha-value>)',
         danger: 'rgb(var(--danger) / <alpha-value>)',
         success: 'rgb(var(--success) / <alpha-value>)',
         warning: 'rgb(var(--warning) / <alpha-value>)',

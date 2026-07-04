@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Camera, CameraOff, Loader2, Mic, MicOff, Video } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { VideoBackground } from '@/components/VideoBackground';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useMediaDevices } from '@/features/call/useMediaDevices';
@@ -79,6 +80,7 @@ export function Lobby({
 
   return (
     <div className="flex min-h-dvh items-center justify-center p-4">
+      <VideoBackground />
       <div className="grid w-full max-w-4xl gap-6 lg:grid-cols-[3fr_2fr]">
         <div className="relative aspect-video overflow-hidden rounded-2xl bg-surface-overlay shadow-2xl ring-1 ring-line animate-scale-in">
           <video
@@ -128,7 +130,7 @@ export function Lobby({
           className="glass flex flex-col gap-4 rounded-2xl p-6 animate-slide-up"
         >
           <h1 className="flex items-center gap-2 text-lg font-semibold">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-onaccent">
               <Video size={16} />
             </span>
             Ready to join?

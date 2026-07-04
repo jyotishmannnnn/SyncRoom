@@ -2,39 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
-/* "Editorial Cobalt" palette: a deep, considered cobalt blue on cool ink
-   neutrals, tuned to feel crafted rather than default-SaaS. Dark is the
-   primary theme (cinematic), light fully supported. */
+/* "Glass Steel": drawn from the background animation, a cool glass-and-steel
+   corridor. Steel-blue accent with an icy-silver highlight on cool charcoal.
+   Dark is the primary theme; light is a cool paper counterpart. --on-accent is
+   white (the steel blue is dark enough). */
 :root {
-  --surface: 244 246 251; /* cool paper */
+  --surface: 242 245 248; /* cool paper */
   --surface-raised: 255 255 255;
-  --surface-overlay: 233 237 246;
-  --ink: 16 24 46; /* deep navy ink */
-  --ink-dim: 74 84 104;
-  --ink-faint: 138 147 168;
-  --accent: 30 68 200; /* cobalt */
-  --accent-hover: 24 54 168;
-  --danger: 205 47 47;
-  --success: 24 148 104;
-  --warning: 194 124 12;
-  --line: 221 227 239;
-  --glass: rgba(252, 253, 255, 0.82);
+  --surface-overlay: 230 236 242;
+  --ink: 18 24 31;
+  --ink-dim: 86 100 114;
+  --ink-faint: 148 162 176;
+  --accent: 42 96 153; /* steel blue */
+  --accent-hover: 32 78 128;
+  --on-accent: 255 255 255;
+  --gold: 62 110 146; /* muted steel highlight, readable on light */
+  --danger: 197 52 47;
+  --success: 28 143 106;
+  --warning: 181 122 22;
+  --line: 220 227 235;
+  --glass: rgba(252, 253, 255, 0.85);
 }
 
 .dark {
-  --surface: 10 15 30; /* deep navy */
-  --surface-raised: 18 26 48;
-  --surface-overlay: 27 37 63;
-  --ink: 234 240 251;
-  --ink-dim: 154 166 192;
-  --ink-faint: 94 106 133;
-  --accent: 68 104 224; /* luminous cobalt */
-  --accent-hover: 95 128 238;
-  --danger: 240 116 116;
-  --success: 79 201 138;
-  --warning: 240 184 74;
-  --line: 38 49 73;
-  --glass: rgba(16, 23, 44, 0.72);
+  --surface: 12 15 21; /* cool charcoal */
+  --surface-raised: 22 27 35;
+  --surface-overlay: 31 39 50;
+  --ink: 233 238 244;
+  --ink-dim: 154 165 180;
+  --ink-faint: 100 112 126;
+  --accent: 53 111 176; /* steel blue */
+  --accent-hover: 74 133 200;
+  --on-accent: 255 255 255;
+  --gold: 183 207 224; /* icy silver highlight */
+  --danger: 235 120 120;
+  --success: 111 194 160;
+  --warning: 224 180 94;
+  --line: 33 41 52;
+  --glass: rgba(14, 18, 26, 0.74);
 }
 
 html,
@@ -46,6 +51,20 @@ body,
 body {
   @apply bg-surface font-sans text-ink antialiased;
   overscroll-behavior: none;
+}
+
+/* Refined dark backdrop: a whisper-faint starfield over soft platinum light,
+   finished with a deep vignette. Neutral and understated for a luxury feel.
+   Fixed to the viewport so it stays put while content scrolls. */
+.dark body {
+  background-color: rgb(var(--surface));
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cg fill='white'%3E%3Ccircle cx='37' cy='52' r='0.8' opacity='0.35'/%3E%3Ccircle cx='210' cy='28' r='0.5' opacity='0.25'/%3E%3Ccircle cx='330' cy='80' r='0.9' opacity='0.3'/%3E%3Ccircle cx='150' cy='140' r='0.6' opacity='0.28'/%3E%3Ccircle cx='400' cy='200' r='0.5' opacity='0.2'/%3E%3Ccircle cx='60' cy='210' r='0.7' opacity='0.3'/%3E%3Ccircle cx='270' cy='250' r='0.5' opacity='0.25'/%3E%3Ccircle cx='110' cy='330' r='0.8' opacity='0.28'/%3E%3Ccircle cx='360' cy='360' r='0.6' opacity='0.32'/%3E%3Ccircle cx='200' cy='390' r='0.5' opacity='0.2'/%3E%3Ccircle cx='20' cy='150' r='0.5' opacity='0.2'/%3E%3Ccircle cx='300' cy='150' r='0.5' opacity='0.25'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(1100px 640px at 50% -240px, rgba(90, 140, 200, 0.14), transparent 70%),
+    radial-gradient(900px 520px at 88% 108%, rgba(70, 110, 170, 0.09), transparent 72%),
+    radial-gradient(150% 135% at 50% 36%, transparent 52%, rgba(1, 3, 8, 0.55));
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+  background-attachment: fixed;
 }
 
 /* Frosted panel used for control bars, side panels and modals. Restrained

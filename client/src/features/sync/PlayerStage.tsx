@@ -126,7 +126,7 @@ export function PlayerStage({
           onClick={resume}
           className="absolute inset-0 z-30 flex cursor-pointer flex-col items-center justify-center gap-3 bg-black/70 text-white"
         >
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent shadow-xl transition-transform hover:scale-105">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-onaccent shadow-xl transition-transform hover:scale-105">
             <Play size={26} className="ml-1" />
           </span>
           <span className="text-sm font-medium">Click to join playback</span>

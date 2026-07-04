@@ -40,11 +40,11 @@ export function MessageBubble({
       <div
         className={cn(
           'relative max-w-[85%] rounded-2xl px-3.5 py-2 text-sm',
-          mine ? 'rounded-br-md bg-accent text-white' : 'rounded-bl-md bg-surface-overlay',
+          mine ? 'rounded-br-md bg-accent text-onaccent' : 'rounded-bl-md bg-surface-overlay',
         )}
       >
         {message.deleted ? (
-          <em className={cn('text-xs', mine ? 'text-white/70' : 'text-ink-faint')}>
+          <em className={cn('text-xs', mine ? 'text-onaccent/70' : 'text-ink-faint')}>
             Message deleted
           </em>
         ) : (
@@ -63,7 +63,7 @@ export function MessageBubble({
                   download={message.attachment.name}
                   className={cn(
                     'mb-1 flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs',
-                    mine ? 'border-white/30' : 'border-line',
+                    mine ? 'border-onaccent/30' : 'border-line',
                   )}
                 >
                   <Download size={14} />

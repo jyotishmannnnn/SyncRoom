@@ -249,7 +249,7 @@ export function ChatPanel() {
           type="submit"
           aria-label="Send message"
           disabled={!text.trim() && !pendingFile}
-          className="cursor-pointer rounded-full bg-accent p-2.5 text-white transition-all hover:bg-accent-hover active:scale-95 disabled:opacity-40"
+          className="cursor-pointer rounded-full bg-accent p-2.5 text-onaccent transition-all hover:bg-accent-hover active:scale-95 disabled:opacity-40"
         >
           <SendHorizonal size={18} />
         </button>

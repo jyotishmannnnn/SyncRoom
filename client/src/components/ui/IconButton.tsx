@@ -24,7 +24,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
         danger
           ? 'bg-danger text-white hover:bg-danger/85'
           : active
-            ? 'bg-accent text-white hover:bg-accent-hover'
+            ? 'bg-accent text-onaccent hover:bg-accent-hover'
             : 'bg-surface-overlay text-ink hover:bg-line/70 border border-line',
         className,
       )}
