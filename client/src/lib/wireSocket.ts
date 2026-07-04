@@ -27,7 +27,7 @@ export function wireSocketToStore(): void {
       'Notification' in window &&
       Notification.permission === 'granted'
     ) {
-      new Notification(`${msg.senderName} · SyncRoom`, {
+      new Notification(`${msg.senderName} · Havnn`, {
         body: msg.attachment ? `Sent ${msg.attachment.name}` : msg.text.slice(0, 120),
       });
     }

@@ -5,6 +5,7 @@ import { generateRoomCode, isValidRoomCode, normalizeRoomCode } from '@syncroom/
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Logo } from '@/components/Logo';
 
 const FEATURES = [
   {
@@ -67,9 +68,9 @@ export function HomePage() {
       <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <span className="flex items-center gap-2 text-lg font-bold">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white">
-            <Video size={16} />
+            <Logo size={18} title="" />
           </span>
-          SyncRoom
+          Havnn
         </span>
         <ThemeToggle />
       </header>
