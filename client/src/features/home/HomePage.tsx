@@ -42,7 +42,7 @@ export function HomePage() {
     e.preventDefault();
     const code = normalizeRoomCode(createCode);
     if (!isValidRoomCode(code)) {
-      setCreateError('4–32 lowercase letters, digits or hyphens.');
+      setCreateError('4–10 lowercase letters, digits or hyphens.');
       return;
     }
     navigate(`/room/${code}?create=1`);
@@ -113,6 +113,7 @@ export function HomePage() {
                   hint="Use the generated code or type your own"
                   autoComplete="off"
                   spellCheck={false}
+                  maxLength={10}
                 />
               </div>
               <Button
@@ -139,7 +140,7 @@ export function HomePage() {
             </h2>
             <Input
               label="Room code"
-              placeholder="abc-defg-hjk"
+              placeholder="abcd-efgh"
               value={joinCode}
               onChange={(e) => {
                 setJoinCode(e.target.value);
@@ -149,6 +150,7 @@ export function HomePage() {
               hint="Ask the host for their code"
               autoComplete="off"
               spellCheck={false}
+              maxLength={10}
             />
             <Button type="submit" size="lg" variant="secondary" className="mt-auto">
               Join

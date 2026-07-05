@@ -1,7 +1,7 @@
 /**
- * Room codes follow the Google Meet convention: three lowercase letter groups
- * (`abc-defg-hjk`). Custom codes allow 4-32 chars of lowercase letters,
- * digits and hyphens (no leading/trailing/double hyphen).
+ * Room codes follow the Google Meet convention: two lowercase letter groups
+ * (`abcd-efgh`). Custom codes allow 4-10 chars of lowercase letters, digits
+ * and hyphens (no leading/trailing/double hyphen).
  */
 
 /** Unambiguous lowercase alphabet (no i/l/o/q). */
@@ -9,7 +9,7 @@ const ALPHABET = 'abcdefghjkmnprstuvwxyz';
 
 export const ROOM_CODE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const ROOM_CODE_MIN = 4;
-export const ROOM_CODE_MAX = 32;
+export const ROOM_CODE_MAX = 10;
 
 export function isValidRoomCode(code: string): boolean {
   return (
@@ -28,7 +28,7 @@ export function normalizeRoomCode(input: string): string {
 export function generateRoomCode(random: () => number = Math.random): string {
   const group = (len: number) =>
     Array.from({ length: len }, () => ALPHABET[Math.floor(random() * ALPHABET.length)]).join('');
-  return `${group(3)}-${group(4)}-${group(3)}`;
+  return `${group(4)}-${group(4)}`;
 }
 
 export const DISPLAY_NAME_MIN = 1;

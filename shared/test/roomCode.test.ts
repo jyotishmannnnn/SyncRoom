@@ -11,7 +11,7 @@ describe('generateRoomCode', () => {
   it('produces a valid meet-style code', () => {
     for (let i = 0; i < 50; i++) {
       const code = generateRoomCode();
-      expect(code).toMatch(/^[a-z]{3}-[a-z]{4}-[a-z]{3}$/);
+      expect(code).toMatch(/^[a-z]{4}-[a-z]{4}$/);
       expect(isValidRoomCode(code)).toBe(true);
     }
   });
@@ -24,8 +24,9 @@ describe('generateRoomCode', () => {
 
 describe('isValidRoomCode', () => {
   it('accepts custom codes', () => {
-    expect(isValidRoomCode('movie-night')).toBe(true);
+    expect(isValidRoomCode('game-time')).toBe(true);
     expect(isValidRoomCode('team42')).toBe(true);
+    expect(isValidRoomCode('a'.repeat(10))).toBe(true);
   });
 
   it('rejects malformed codes', () => {
@@ -35,7 +36,7 @@ describe('isValidRoomCode', () => {
     expect(isValidRoomCode('double--hyphen')).toBe(false);
     expect(isValidRoomCode('UPPER')).toBe(false);
     expect(isValidRoomCode('has space')).toBe(false);
-    expect(isValidRoomCode('a'.repeat(33))).toBe(false);
+    expect(isValidRoomCode('a'.repeat(11))).toBe(false);
     expect(isValidRoomCode('<script>')).toBe(false);
   });
 });

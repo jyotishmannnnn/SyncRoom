@@ -4,7 +4,7 @@
 
 | Feature                   | Notes                                                                                                                   |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Create room               | Random Meet-style code (`abc-defg-hjk`, unambiguous alphabet) or custom code (4–32 chars, `a-z 0-9 -`)                  |
+| Create room               | Random Meet-style code (`abcd-efgh`, unambiguous alphabet) or custom code (4–10 chars, `a-z 0-9 -`)                     |
 | Join by code              | Deep-linkable: `/room/<code>` goes straight to the lobby                                                                |
 | Participant list          | Names, host badge, camera/presenting status, mute indicators, live count in the top bar                                 |
 | Lock / unlock             | Locked rooms reject new joiners; existing members unaffected                                                            |
