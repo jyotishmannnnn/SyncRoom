@@ -2,44 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
-/* "Petal Bloom": drawn from the background animation, a dawn cherry-blossom
-   meadow washed in pastels. Dusty-rose accent with a soft sage highlight on
-   blush white. Light is the primary theme (matching the airy daytime scene);
-   dark is a dusky-mauve counterpart. Soft, dreamy and low-contrast. */
+/* "Night Sakura": drawn from the background animation, moonlit cherry blossoms
+   drifting against a dark sky. Blossom-pink accent with a soft rose-gold
+   highlight. Dark is the primary theme (matching the night scene); light is a
+   soft petal-on-cream counterpart. Dreamy, romantic, low-contrast. */
 :root {
-  --surface: 249 246 247; /* blush white */
-  --surface-raised: 255 254 254;
-  --surface-overlay: 243 237 240;
-  --ink: 56 48 55; /* soft plum, not harsh black */
-  --ink-dim: 118 104 114;
-  --ink-faint: 170 158 166;
-  --accent: 192 116 146; /* dusty rose */
-  --accent-hover: 170 94 124;
+  --surface: 249 244 247; /* petal cream */
+  --surface-raised: 255 253 254;
+  --surface-overlay: 243 235 241;
+  --ink: 40 30 38; /* deep plum */
+  --ink-dim: 104 88 100;
+  --ink-faint: 162 146 158;
+  --accent: 192 88 138; /* blossom rose */
+  --accent-hover: 170 70 118;
   --on-accent: 255 255 255;
-  --gold: 138 162 120; /* soft meadow sage */
-  --danger: 196 90 96;
-  --success: 96 156 116;
-  --warning: 198 156 92;
-  --line: 233 224 229;
-  --glass: rgba(252, 249, 251, 0.82);
+  --gold: 190 132 150; /* rose gold */
+  --danger: 196 74 74;
+  --success: 84 146 108;
+  --warning: 196 148 72;
+  --line: 233 222 230;
+  --glass: rgba(252, 248, 251, 0.82);
 }
 
 .dark {
-  --surface: 26 22 27; /* dusky mauve */
-  --surface-raised: 36 31 38;
-  --surface-overlay: 48 41 51;
-  --ink: 237 231 236;
-  --ink-dim: 178 166 177;
-  --ink-faint: 120 110 122;
-  --accent: 226 158 184; /* soft blossom glow */
-  --accent-hover: 238 178 200;
-  --on-accent: 28 20 26;
-  --gold: 176 196 156; /* moonlit sage */
-  --danger: 232 130 132;
-  --success: 132 192 152;
-  --warning: 226 180 112;
-  --line: 47 40 51;
-  --glass: rgba(24, 20, 25, 0.74);
+  --surface: 21 16 23; /* midnight plum */
+  --surface-raised: 31 24 34;
+  --surface-overlay: 43 34 46;
+  --ink: 240 233 239;
+  --ink-dim: 178 162 176;
+  --ink-faint: 120 106 120;
+  --accent: 226 142 182; /* soft sakura glow */
+  --accent-hover: 238 162 198;
+  --on-accent: 26 16 24;
+  --gold: 226 184 192; /* moonlit rose gold */
+  --danger: 232 122 122;
+  --success: 128 194 152;
+  --warning: 226 182 110;
+  --line: 47 38 51;
+  --glass: rgba(19, 14, 21, 0.74);
 }
 
 html,
@@ -53,16 +53,16 @@ body {
   overscroll-behavior: none;
 }
 
-/* Dawn-meadow backdrop for when the video isn't showing: a whisper-faint drift
-   of blossom petals over a soft rose-and-lavender glow, finished with a gentle
-   mauve vignette. Fixed so it stays put while content scrolls. */
+/* Night-sakura backdrop for when the video isn't showing: a whisper-faint
+   drift of blossom petals over a soft rose moonglow, finished with a deep plum
+   vignette. Fixed so it stays put while content scrolls. */
 .dark body {
   background-color: rgb(var(--surface));
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cg fill='%23f4d3e0'%3E%3Ccircle cx='37' cy='52' r='0.8' opacity='0.28'/%3E%3Ccircle cx='210' cy='28' r='0.5' opacity='0.2'/%3E%3Ccircle cx='330' cy='80' r='0.9' opacity='0.26'/%3E%3Ccircle cx='150' cy='140' r='0.6' opacity='0.22'/%3E%3Ccircle cx='400' cy='200' r='0.5' opacity='0.16'/%3E%3Ccircle cx='60' cy='210' r='0.7' opacity='0.24'/%3E%3Ccircle cx='270' cy='250' r='0.5' opacity='0.2'/%3E%3Ccircle cx='110' cy='330' r='0.8' opacity='0.22'/%3E%3Ccircle cx='360' cy='360' r='0.6' opacity='0.26'/%3E%3Ccircle cx='200' cy='390' r='0.5' opacity='0.16'/%3E%3Ccircle cx='20' cy='150' r='0.5' opacity='0.16'/%3E%3Ccircle cx='300' cy='150' r='0.5' opacity='0.2'/%3E%3C/g%3E%3C/svg%3E"),
-    radial-gradient(1100px 640px at 24% -180px, rgba(226, 158, 184, 0.15), transparent 70%),
-    radial-gradient(900px 520px at 92% 108%, rgba(150, 140, 190, 0.1), transparent 72%),
-    radial-gradient(150% 135% at 44% 32%, transparent 55%, rgba(12, 8, 13, 0.5));
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cg fill='%23f6cfe0'%3E%3Ccircle cx='37' cy='52' r='0.8' opacity='0.3'/%3E%3Ccircle cx='210' cy='28' r='0.5' opacity='0.22'/%3E%3Ccircle cx='330' cy='80' r='0.9' opacity='0.28'/%3E%3Ccircle cx='150' cy='140' r='0.6' opacity='0.24'/%3E%3Ccircle cx='400' cy='200' r='0.5' opacity='0.18'/%3E%3Ccircle cx='60' cy='210' r='0.7' opacity='0.26'/%3E%3Ccircle cx='270' cy='250' r='0.5' opacity='0.22'/%3E%3Ccircle cx='110' cy='330' r='0.8' opacity='0.24'/%3E%3Ccircle cx='360' cy='360' r='0.6' opacity='0.28'/%3E%3Ccircle cx='200' cy='390' r='0.5' opacity='0.18'/%3E%3Ccircle cx='20' cy='150' r='0.5' opacity='0.18'/%3E%3Ccircle cx='300' cy='150' r='0.5' opacity='0.22'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(1100px 640px at 28% -180px, rgba(226, 142, 182, 0.16), transparent 70%),
+    radial-gradient(900px 520px at 90% 110%, rgba(150, 110, 170, 0.1), transparent 72%),
+    radial-gradient(150% 135% at 42% 32%, transparent 54%, rgba(8, 4, 10, 0.55));
   background-repeat: repeat, no-repeat, no-repeat, no-repeat;
   background-attachment: fixed;
 }

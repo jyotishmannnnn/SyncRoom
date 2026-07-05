@@ -1,9 +1,9 @@
 /**
  * Fixed, full-viewport looping video used as an ambient backdrop on the
- * pre-room pages: a dawn cherry-blossom meadow, pastel hills and drifting
- * petals. It sits behind everything (negative z-index) and is finished with a
- * scrim + gradient so foreground text stays legible. The clip is a seamless
- * crossfade loop so the drifting petals never hard-cut. Muted + playsInline
+ * pre-room pages: moonlit cherry blossoms with petals drifting on the wind.
+ * It sits behind everything (negative z-index) and is finished with a scrim +
+ * gradient so foreground text stays legible. The clip is a seamless crossfade
+ * loop so the drifting petals never hard-cut. Muted + playsInline
  * so it autoplays on every browser, and it respects reduced-motion by falling
  * back to the still poster frame.
  */

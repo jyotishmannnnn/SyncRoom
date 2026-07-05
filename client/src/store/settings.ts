@@ -34,7 +34,7 @@ interface SettingsStore extends Settings {
 
 /** Factory defaults, reused by the "Reset to defaults" action. */
 export const DEFAULT_SETTINGS: Settings = {
-  theme: 'light',
+  theme: 'dark',
   cameraId: null,
   micId: null,
   speakerId: null,
