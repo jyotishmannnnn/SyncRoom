@@ -8,7 +8,9 @@ export type PlayerEvent =
   | { type: 'rate'; rate: number }
   | { type: 'ended' }
   | { type: 'autoplay-blocked' }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  /** Bytes are downloading (source is alive, just not ready yet). */
+  | { type: 'loadprogress' };
 
 export type PlaybackState = 'unstarted' | 'playing' | 'paused' | 'buffering' | 'ended';
 

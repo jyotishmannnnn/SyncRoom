@@ -41,6 +41,12 @@ export class Html5Adapter implements PlayerAdapter {
       this.ready = true;
       this.cb?.({ type: 'ready' });
     });
+    // Bytes are arriving. Used by the controller's Drive stall-watchdog to
+    // distinguish "loading slowly" (large non-faststart file streaming through
+    // the proxy) from "genuinely stuck", so a slow file isn't wrongly dropped
+    // to the unsynced iframe before its metadata is ready.
+    video.addEventListener('progress', () => this.cb?.({ type: 'loadprogress' }));
+    video.addEventListener('loadeddata', () => this.cb?.({ type: 'loadprogress' }));
     video.addEventListener('play', () => this.cb?.({ type: 'play', time: video.currentTime }));
     video.addEventListener('pause', () => {
       if (!video.ended) this.cb?.({ type: 'pause', time: video.currentTime });
