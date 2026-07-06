@@ -50,14 +50,8 @@ const SEEK_DEBOUNCE_MS = 400;
 /** Host re-anchors authority only when its player truly diverged. */
 const HEARTBEAT_INTERVAL_MS = 10_000;
 const HEARTBEAT_DRIFT_S = 0.25;
-/**
- * Drive direct-stream stall watchdog: fall back to the preview iframe only
- * after this long with NO download progress. It is re-armed on every progress
- * event, so a large, slowly-streaming file (e.g. a non-faststart MP4 whose moov
- * atom is range-fetched through the proxy) keeps loading instead of being
- * wrongly abandoned as "unsyncable".
- */
-const DRIVE_STALL_TIMEOUT_MS = 20_000;
+/** Drive direct streams that neither error nor become ready get this long. */
+const DRIVE_LOAD_TIMEOUT_MS = 12_000;
 
 /** Provider registry, the ONLY place that maps media kinds to adapters. */
 function adapterFor(media: MediaItem): PlayerAdapter {
@@ -131,9 +125,12 @@ export class SyncController {
     adapter.onEvent((ev) => this.onPlayerEvent(ev));
 
     // Drive direct streams sometimes hang without ever erroring (interstitial
-    // page, quota); a stall-watchdog degrades to the preview iframe if no bytes
-    // arrive, but progress events keep re-arming it so a slow load survives.
-    if (media.kind === 'drive') this.armDriveWatchdog();
+    // page, quota), degrade to the preview iframe instead of spinning forever.
+    if (media.kind === 'drive') {
+      this.loadTimeout = setTimeout(() => {
+        if (!this.disposed && !adapter.isReady()) this.fallbackToDriveEmbed();
+      }, DRIVE_LOAD_TIMEOUT_MS);
+    }
 
     try {
       await adapter.load(media, this.opts.container, controls);
@@ -223,18 +220,6 @@ export class SyncController {
   private clearLoadTimeout(): void {
     if (this.loadTimeout) clearTimeout(this.loadTimeout);
     this.loadTimeout = null;
-  }
-
-  /**
-   * (Re)arm the Drive stall-watchdog: only fall back to the unsynced preview
-   * iframe after DRIVE_STALL_TIMEOUT_MS with no download progress. Called on
-   * load and reset on every progress event, so a slow-but-streaming file loads.
-   */
-  private armDriveWatchdog(): void {
-    this.clearLoadTimeout();
-    this.loadTimeout = setTimeout(() => {
-      if (!this.disposed && !this.adapter?.isReady()) this.fallbackToDriveEmbed();
-    }, DRIVE_STALL_TIMEOUT_MS);
   }
 
   /* ------------------------------------------------------------------ */
@@ -336,14 +321,6 @@ export class SyncController {
         return;
       case 'ended':
         this.opts.onEnded();
-        return;
-      case 'loadprogress':
-        // Bytes are flowing for a Drive direct stream, it's loading (just
-        // slowly). Reset the stall-watchdog so we don't drop to the unsynced
-        // iframe while the file is still downloading its metadata.
-        if (this.media?.kind === 'drive' && !this.fellBack && !this.adapter?.isReady()) {
-          this.armDriveWatchdog();
-        }
         return;
       default:
         break;
