@@ -109,6 +109,30 @@ describe('transcode pipeline (real ffmpeg)', () => {
     expect(playlist).toContain('seg00000.ts');
   }, 60_000);
 
+  // Remaining format matrix. Each uses its own manager: the shared one is
+  // capped at maxTranscodeSessions live sessions.
+  for (const [name, codecArgs] of [
+    ['hevc.mp4', ['-c:v', 'libx265', '-tag:v', 'hvc1', '-c:a', 'aac']],
+    ['sample.avi', ['-c:v', 'mpeg4', '-c:a', 'mp3']],
+    ['sample.mpg', ['-c:v', 'mpeg2video', '-c:a', 'mp2']],
+  ] as const) {
+    it(`transcodes ${name} to a playable HLS playlist`, async () => {
+      const src = await generate(name, [...codecArgs]);
+      stubDriveWith(src, name);
+      const own = new TranscodeManager();
+      const prev = manager;
+      manager = own; // playlistWithRetries uses the module-level manager
+      try {
+        const playlist = (await playlistWithRetries(`FMT${name.replace(/\W/g, '').toUpperCase()}01`)).toString('utf8');
+        expect(playlist).toContain('#EXTM3U');
+        expect(playlist).toContain('seg00000.ts');
+      } finally {
+        manager = prev;
+        await own.dispose();
+      }
+    }, 60_000);
+  }
+
   it('fails with `upstream` when Drive answers with an HTML interstitial', async () => {
     globalThis.fetch = (async () =>
       new Response('<html>sign in</html>', {

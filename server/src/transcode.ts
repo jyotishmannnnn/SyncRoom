@@ -7,7 +7,7 @@ import { Readable } from 'node:stream';
 import type { ReadableStream as NodeWebReadableStream } from 'node:stream/web';
 import type { Response } from 'express';
 import { config } from './config';
-import { fetchDrive, filenameFromDisposition } from './driveProxy';
+import { DriveError, openDriveMedia, type DriveMedia } from './driveClient';
 
 /**
  * On-the-fly Google Drive → HLS transcoder.
@@ -265,31 +265,29 @@ export class TranscodeManager {
     const dir = await mkdtemp(path.join(tmpdir(), `syncroom-hls-${id}-`));
     const abort = new AbortController();
 
-    let upstream: globalThis.Response;
+    let media: DriveMedia;
     try {
-      // Full file, no Range: the encoder reads start-to-end.
-      upstream = await fetchDrive(id, undefined, abort.signal);
+      // Full file, no Range: the encoder reads start-to-end. The drive client
+      // guarantees actual media bytes or throws a precise DriveError (quota,
+      // not-public, not-found, upstream) — HTML can never reach ffmpeg.
+      media = await openDriveMedia(id, undefined, abort.signal);
     } catch (err) {
       await rm(dir, { recursive: true, force: true });
-      console.warn(`[transcode] ${id}: Drive fetch failed: ${String(err)}`);
-      throw new TranscodeError('upstream', 'Drive download failed');
+      const detail = err instanceof DriveError ? `${err.kind}: ${err.message}` : String(err);
+      console.warn(`[transcode] ${id}: Drive fetch failed (${detail})`);
+      throw new TranscodeError('upstream', `Drive download failed (${detail})`);
     }
-    const ct = upstream.headers.get('content-type') ?? '';
-    if (!upstream.ok || ct.includes('text/html') || !upstream.body) {
-      abort.abort();
-      await rm(dir, { recursive: true, force: true });
-      console.warn(
-        `[transcode] ${id}: Drive returned no media (status=${upstream.status}, ct=${ct}) — ` +
-          'not shared publicly, quota exceeded, or interstitial page',
-      );
-      throw new TranscodeError('upstream', `Drive returned status ${upstream.status} (${ct})`);
-    }
+    const upstream = media.response;
 
-    const filename = filenameFromDisposition(upstream);
-    const strategy = inputStrategyFor(filename);
+    const filename = media.filename;
+    // Google's preview-stream fallback is always a faststart MP4 (moov atom
+    // up front, built for streaming), so it pipes fine whatever the original
+    // filename's extension claims.
+    const strategy = media.source === 'stream' ? 'pipe' : inputStrategyFor(filename);
     const size = upstream.headers.get('content-length') ?? '?';
     console.log(
-      `[transcode] ${id}: start (file="${filename ?? 'unknown'}", ${size} bytes, strategy=${strategy})`,
+      `[transcode] ${id}: start (file="${filename ?? 'unknown'}", ${size} bytes, ` +
+        `source=${media.source}, strategy=${strategy})`,
     );
 
     const session: Session = {
