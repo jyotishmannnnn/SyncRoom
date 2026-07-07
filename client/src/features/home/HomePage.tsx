@@ -61,7 +61,7 @@ export function HomePage() {
   return (
     <div className="relative min-h-dvh overflow-hidden">
       <VideoBackground />
-      {/* Soft, off-center cobalt washes, subtle rather than a centered neon blob. */}
+      {/* Soft, off-center sakura washes, subtle rather than a centered neon blob. */}
       <div
         aria-hidden
         className="pointer-events-none absolute -top-40 right-[-8rem] h-80 w-[42rem] rounded-full bg-accent/[0.1] blur-3xl"

@@ -2,44 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
-/* "Aurora": drawn from the background animation, electric blue-and-white light
-   ribbons flowing over near-black. Vivid azure accent with an icy silver-white
-   highlight. Dark is the primary theme (matching the deep-space scene); light
-   is a cool paper counterpart. Sleek and modern. */
+/* "Sakura noir": drawn from the background film, cherry blossoms drifting over
+   a cinematic sky. Charcoal and deep navy-slate surfaces, soft sakura accent,
+   warm champagne highlight, off-white ink. Dark is the primary theme (matching
+   the dusk scene); light is a warm paper counterpart. Refined, not pink. */
 :root {
-  --surface: 244 247 251; /* cool paper */
+  --surface: 250 248 247; /* warm paper */
   --surface-raised: 255 255 255;
-  --surface-overlay: 231 238 246;
-  --ink: 16 24 34; /* near-black ink */
-  --ink-dim: 82 96 112;
-  --ink-faint: 144 158 174;
-  --accent: 34 104 198; /* azure */
-  --accent-hover: 24 86 168;
-  --on-accent: 255 255 255;
-  --gold: 64 120 166; /* steel-blue highlight, readable on light */
+  --surface-overlay: 243 238 238;
+  --ink: 30 28 34; /* charcoal ink */
+  --ink-dim: 100 94 106;
+  --ink-faint: 156 148 158;
+  --accent: 158 70 101; /* deep raspberry-plum, sakura at dusk */
+  --accent-hover: 133 55 84;
+  --on-accent: 255 251 252;
+  --gold: 156 112 60; /* warm bronze highlight, readable on light */
   --danger: 200 60 55;
   --success: 26 140 104;
   --warning: 176 120 30;
-  --line: 219 227 237;
-  --glass: rgba(252, 253, 255, 0.85);
+  --line: 232 224 226;
+  --glass: rgba(253, 251, 250, 0.85);
 }
 
 .dark {
-  --surface: 9 12 17; /* near-black, faint blue */
-  --surface-raised: 19 24 32;
-  --surface-overlay: 28 35 46;
-  --ink: 232 238 246;
-  --ink-dim: 150 164 182;
-  --ink-faint: 96 110 128;
-  --accent: 74 146 236; /* electric azure */
-  --accent-hover: 104 172 255;
-  --on-accent: 255 255 255;
-  --gold: 190 214 238; /* icy silver-white glow */
+  --surface: 12 13 20; /* deep navy-charcoal */
+  --surface-raised: 21 23 33;
+  --surface-overlay: 31 34 47;
+  --ink: 240 238 240;
+  --ink-dim: 164 160 174;
+  --ink-faint: 104 102 118;
+  --accent: 226 138 160; /* soft sakura */
+  --accent-hover: 238 160 179;
+  --on-accent: 44 22 32; /* deep plum-charcoal, keeps sakura buttons crisp */
+  --gold: 236 200 168; /* warm champagne glow */
   --danger: 235 110 110;
   --success: 90 200 168;
   --warning: 228 182 100;
-  --line: 30 38 50;
-  --glass: rgba(11, 15, 21, 0.74);
+  --line: 40 40 54;
+  --glass: rgba(14, 14, 22, 0.72);
 }
 
 html,
@@ -53,16 +53,16 @@ body {
   overscroll-behavior: none;
 }
 
-/* Aurora backdrop for when the video isn't showing: a whisper-faint starfield
-   over an electric-blue glow, finished with a deep near-black vignette. Fixed
-   so it stays put while content scrolls. */
+/* Dusk backdrop for when the video isn't showing: a whisper-faint drift of
+   petals over a soft sakura glow and deep navy, finished with a near-black
+   vignette. Fixed so it stays put while content scrolls. */
 .dark body {
   background-color: rgb(var(--surface));
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cg fill='%23cfe0f5'%3E%3Ccircle cx='37' cy='52' r='0.8' opacity='0.32'/%3E%3Ccircle cx='210' cy='28' r='0.5' opacity='0.24'/%3E%3Ccircle cx='330' cy='80' r='0.9' opacity='0.3'/%3E%3Ccircle cx='150' cy='140' r='0.6' opacity='0.26'/%3E%3Ccircle cx='400' cy='200' r='0.5' opacity='0.2'/%3E%3Ccircle cx='60' cy='210' r='0.7' opacity='0.28'/%3E%3Ccircle cx='270' cy='250' r='0.5' opacity='0.24'/%3E%3Ccircle cx='110' cy='330' r='0.8' opacity='0.26'/%3E%3Ccircle cx='360' cy='360' r='0.6' opacity='0.3'/%3E%3Ccircle cx='200' cy='390' r='0.5' opacity='0.2'/%3E%3Ccircle cx='20' cy='150' r='0.5' opacity='0.2'/%3E%3Ccircle cx='300' cy='150' r='0.5' opacity='0.24'/%3E%3C/g%3E%3C/svg%3E"),
-    radial-gradient(1100px 640px at 50% -220px, rgba(74, 146, 236, 0.16), transparent 70%),
-    radial-gradient(900px 520px at 85% 110%, rgba(60, 120, 210, 0.1), transparent 72%),
-    radial-gradient(150% 135% at 50% 34%, transparent 52%, rgba(2, 4, 8, 0.6));
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cg fill='%23f2dde4'%3E%3Ccircle cx='37' cy='52' r='0.8' opacity='0.32'/%3E%3Ccircle cx='210' cy='28' r='0.5' opacity='0.24'/%3E%3Ccircle cx='330' cy='80' r='0.9' opacity='0.3'/%3E%3Ccircle cx='150' cy='140' r='0.6' opacity='0.26'/%3E%3Ccircle cx='400' cy='200' r='0.5' opacity='0.2'/%3E%3Ccircle cx='60' cy='210' r='0.7' opacity='0.28'/%3E%3Ccircle cx='270' cy='250' r='0.5' opacity='0.24'/%3E%3Ccircle cx='110' cy='330' r='0.8' opacity='0.26'/%3E%3Ccircle cx='360' cy='360' r='0.6' opacity='0.3'/%3E%3Ccircle cx='200' cy='390' r='0.5' opacity='0.2'/%3E%3Ccircle cx='20' cy='150' r='0.5' opacity='0.2'/%3E%3Ccircle cx='300' cy='150' r='0.5' opacity='0.24'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(1100px 640px at 50% -220px, rgba(226, 138, 160, 0.12), transparent 70%),
+    radial-gradient(900px 520px at 85% 110%, rgba(96, 118, 190, 0.1), transparent 72%),
+    radial-gradient(150% 135% at 50% 34%, transparent 52%, rgba(4, 3, 8, 0.6));
   background-repeat: repeat, no-repeat, no-repeat, no-repeat;
   background-attachment: fixed;
 }
