@@ -186,7 +186,21 @@ export async function fetchDrive(
   return fetch(confirmUrl, { headers: confirmHeaders, redirect: 'follow', signal });
 }
 
-export async function driveProxy(req: Request, res: Response): Promise<void> {
+export interface DriveProxyHooks {
+  /**
+   * Fired when the file's container is known to be un-playable in <video>
+   * (the request 415s). The caller uses it to prewarm the HLS transcode, so
+   * the first segment is already encoding by the time the client swaps
+   * players.
+   */
+  onUnplayable?: (id: string) => void;
+}
+
+export async function driveProxy(
+  req: Request,
+  res: Response,
+  hooks: DriveProxyHooks = {},
+): Promise<void> {
   const id = String(req.params.id ?? '');
   if (!DRIVE_ID.test(id)) {
     res.status(400).json({ error: 'Invalid Drive file id.' });
@@ -199,13 +213,17 @@ export async function driveProxy(req: Request, res: Response): Promise<void> {
   let upstream: globalThis.Response;
   try {
     upstream = await fetchDrive(id, req.headers.range, controller.signal);
-  } catch {
-    if (!res.headersSent) res.status(502).json({ error: 'Could not reach Google Drive.' });
+  } catch (err) {
+    if (!res.headersSent) {
+      console.warn(`[drive] ${id}: fetch failed: ${String(err)}`);
+      res.status(502).json({ error: 'Could not reach Google Drive.' });
+    }
     return;
   }
 
   const ct = upstream.headers.get('content-type') ?? '';
   if (!upstream.ok && upstream.status !== 206) {
+    console.warn(`[drive] ${id}: upstream status ${upstream.status} (not accessible)`);
     res.status(upstream.status === 404 ? 404 : 403).json({
       error: 'This Drive file is not accessible, is it shared “Anyone with the link”?',
     });
@@ -213,17 +231,22 @@ export async function driveProxy(req: Request, res: Response): Promise<void> {
   }
   if (ct.includes('text/html') || !upstream.body) {
     // Still a sign-in / interstitial page rather than a media stream.
+    console.warn(`[drive] ${id}: upstream returned HTML (sign-in/quota interstitial)`);
     res.status(403).json({ error: 'Drive did not return a playable video for this file.' });
     return;
   }
 
   // Fail fast on containers no browser can decode: a clear error beats
-  // streaming megabytes only for the <video> element to reject them.
+  // streaming megabytes only for the <video> element to reject them. The
+  // client reacts by requesting the HLS transcode of the same file, which we
+  // prewarm here so its first segment is already cooking.
   const filename = filenameFromDisposition(upstream);
   if (isUnplayableContainer(filename)) {
     const ext = extensionOf(filename);
+    console.log(`[drive] ${id}: unplayable container (${ext}), prewarming transcode`);
+    hooks.onUnplayable?.(id);
     res.status(415).json({
-      error: `This video format (${ext}) can’t be played in a browser. Re-save it as MP4 (H.264) for synced playback.`,
+      error: `This video format (${ext}) can’t be played in a browser directly; it will be converted for synced playback.`,
       code: 'unplayable-format',
     });
     return;

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { TranscodeError, TranscodeManager } from '../src/transcode';
+import { inputStrategyFor, TranscodeError, TranscodeManager } from '../src/transcode';
 
 /**
  * Validation-layer tests only: these never spawn ffmpeg or hit the network.
@@ -37,5 +37,23 @@ describe('TranscodeManager input validation', () => {
   it('returns null for a valid segment name when no session exists yet', () => {
     manager = new TranscodeManager();
     expect(manager.segmentPath(VALID_ID, 'seg00000.ts')).toBeNull();
+  });
+});
+
+describe('inputStrategyFor', () => {
+  it('downloads QuickTime-family containers to disk (moov may trail the media)', () => {
+    expect(inputStrategyFor('movie.mp4')).toBe('file');
+    expect(inputStrategyFor('clip.MOV')).toBe('file');
+    expect(inputStrategyFor('phone.3gp')).toBe('file');
+    expect(inputStrategyFor('video.m4v')).toBe('file');
+  });
+
+  it('pipes streamable containers straight into ffmpeg', () => {
+    expect(inputStrategyFor('show.mkv')).toBe('pipe');
+    expect(inputStrategyFor('old.avi')).toBe('pipe');
+    expect(inputStrategyFor('cam.mpg')).toBe('pipe');
+    expect(inputStrategyFor('stream.ts')).toBe('pipe');
+    expect(inputStrategyFor(null)).toBe('pipe');
+    expect(inputStrategyFor('noextension')).toBe('pipe');
   });
 });

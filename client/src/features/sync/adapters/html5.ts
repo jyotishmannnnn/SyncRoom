@@ -85,7 +85,52 @@ export class Html5Adapter implements PlayerAdapter {
         this.cb?.({ type: 'error', message: 'HLS is not supported in this browser.' });
         return;
       }
-      const hls = new Hls({ enableWorker: true });
+      const hls = new Hls({
+        enableWorker: true,
+        // The Drive transcode's playlist answers 503 + Retry-After while the
+        // encode warms up (Drive download + ffmpeg first segment can take a
+        // couple of minutes for large files). Retry patiently instead of
+        // giving up after hls.js's ~20 s defaults; segments/timeouts keep the
+        // stock policy.
+        manifestLoadPolicy: {
+          default: {
+            maxTimeToFirstByteMs: 20_000,
+            maxLoadTimeMs: 20_000,
+            timeoutRetry: { maxNumRetry: 4, retryDelayMs: 1_000, maxRetryDelayMs: 4_000 },
+            errorRetry: {
+              maxNumRetry: 60,
+              retryDelayMs: 2_000,
+              maxRetryDelayMs: 4_000,
+              // Only "warming up" (503) and transient network failures are
+              // worth waiting out; a 502/404 means the transcode is dead and
+              // retrying would just delay the fallback by minutes.
+              shouldRetry: (retryConfig, retryCount, isTimeout, response) =>
+                retryCount < (retryConfig?.maxNumRetry ?? 0) &&
+                (isTimeout || response?.code === 503 || response?.code === 0),
+            },
+          },
+        },
+      });
+      // hls.js failures never touch video.error; without this listener a dead
+      // stream (transcode 502, unreachable playlist) would be pure silence and
+      // the controller could only ever guess "timeout".
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (!data.fatal) return;
+        const status = data.response?.code;
+        const kind =
+          data.type === Hls.ErrorTypes.MEDIA_ERROR
+            ? 'decode'
+            : data.type === Hls.ErrorTypes.NETWORK_ERROR
+              ? status !== undefined && status >= 400 && status !== 503
+                ? 'unsupported' // 502 = transcode failed, 404/415 = no stream
+                : 'network'
+              : 'other';
+        this.cb?.({
+          type: 'error',
+          message: `HLS playback failed (${data.details}${status ? `, HTTP ${status}` : ''}).`,
+          kind,
+        });
+      });
       hls.loadSource(item.url);
       hls.attachMedia(video);
       this.hls = hls;

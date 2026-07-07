@@ -79,8 +79,21 @@ export const config = {
   // bare Render/clone with no system ffmpeg), then whatever is on PATH.
   ffmpegPath: process.env.FFMPEG_PATH?.trim() || ffmpegStatic || 'ffmpeg',
   maxTranscodeSessions: int('MAX_TRANSCODE_SESSIONS', 2),
-  /** How long a first HLS segment may take before the request gives up. */
-  transcodeStartTimeoutMs: int('TRANSCODE_START_TIMEOUT_MS', 25_000),
+  /**
+   * Stall window: the encode fails if NO input bytes arrive AND no first
+   * segment appears for this long. Progress (a downloading input) keeps
+   * resetting the clock, so a large file that is still transferring is never
+   * killed mid-download.
+   */
+  transcodeStartTimeoutMs: int('TRANSCODE_START_TIMEOUT_MS', 60_000),
+  /** Absolute ceiling for the first segment (covers download + probe + encode). */
+  transcodeMaxStartMs: int('TRANSCODE_MAX_START_MS', 10 * 60_000),
+  /**
+   * How long a single playlist request may wait for readiness before returning
+   * 503 + Retry-After (the client retries). Kept well under typical reverse-
+   * proxy read timeouts (nginx default 60 s) so warming encodes never 504.
+   */
+  transcodePollWaitMs: int('TRANSCODE_POLL_WAIT_MS', 10_000),
   /** Idle grace after the last playlist/segment hit before a session is reaped. */
   transcodeIdleMs: int('TRANSCODE_IDLE_MS', 60_000),
 

@@ -10,7 +10,7 @@ import type { AppServer } from './handlers';
 import { registerHandlers } from './handlers';
 import { RoomManager } from './roomManager';
 import { driveProxy } from './driveProxy';
-import { TranscodeError, transcodeManager } from './transcode';
+import { resolveFfmpeg, TranscodeError, transcodeManager } from './transcode';
 import { makeOriginCheck, parseAllowedOrigins } from './cors';
 import { config } from './config';
 import { ConnectionGate } from './connectionGate';
@@ -64,15 +64,19 @@ app.get('/drive/:id', (req: Request, res: Response, next: NextFunction) => {
   };
   res.on('close', release);
   res.on('finish', release);
-  void driveProxy(req, res).catch(next);
+  void driveProxy(req, res, { onUnplayable: (fileId) => transcodeManager.prewarm(fileId) }).catch(
+    next,
+  );
 });
 
 // HLS transcode of a Drive file whose container/codec a browser can't decode
-// (MPEG-2 .MPG, MKV, AVI…). One ffmpeg → HLS encode per file id, shared by all
-// its viewers, so the video still plays in the SYNCED player. `:file` is either
-// `index.m3u8` (the playlist) or a `segNNNNN.ts` chunk; the manager validates
-// the id/name and streams from its temp dir. A failure (ffmpeg absent, bad
-// input) surfaces as 502/503 and the client falls back to the unsynced embed.
+// (MPEG-2 .MPG, MKV, AVI, HEVC…). One ffmpeg → HLS encode per file id, shared
+// by all its viewers, so the video still plays in the SYNCED player. `:file`
+// is either `index.m3u8` (the playlist) or a `segNNNNN.ts` chunk; the manager
+// validates the id/name and streams from its temp dir. While the encode warms
+// up the playlist answers 503 + Retry-After (hls.js retries); a hard failure
+// (ffmpeg absent, bad input, Drive refusal) surfaces as 502 and the client
+// falls back to the unsynced embed.
 app.get('/drive/:id/hls/:file', (req: Request, res: Response) => {
   const id = String(req.params.id ?? '');
   const file = String(req.params.file ?? '');
@@ -84,9 +88,13 @@ app.get('/drive/:id/hls/:file', (req: Request, res: Response) => {
     const kind = err instanceof TranscodeError ? err.kind : 'ffmpeg';
     if (kind === 'bad-id') {
       res.status(400).json({ error: 'Invalid Drive file id.' });
+    } else if (kind === 'pending') {
+      res.status(503).set('Retry-After', '2').json({ error: 'Transcode warming up, retry shortly.' });
     } else if (kind === 'busy') {
       res.status(503).set('Retry-After', '10').json({ error: 'Server busy, please retry shortly.' });
     } else {
+      const detail = err instanceof Error ? err.message : String(err);
+      console.warn(`[transcode] ${id}: request failed (${kind}): ${detail}`);
       res.status(502).json({ error: 'Could not transcode this Drive file for synced playback.' });
     }
   });
@@ -158,6 +166,10 @@ const io: AppServer = new Server(httpServer, {
 
 const rooms = new RoomManager();
 registerHandlers(io, rooms);
+
+// Probe ffmpeg at boot so a missing binary is a loud startup log line, not a
+// mystery 502 on the first Drive transcode.
+if (config.transcodeEnabled) void resolveFfmpeg();
 
 httpServer.listen(config.port, () => {
   console.log(

@@ -33,6 +33,8 @@ export interface SyncControllerOptions {
   onSyncUnavailable: (reason: DriveFallbackReason) => void;
   /** Fired when autoplay policy blocks playback, UI shows a click-to-play. */
   onAutoplayBlocked: () => void;
+  /** Fired once when a Drive file starts server-side transcoding (slow start). */
+  onTranscodeStart?: () => void;
   /** Test seam: overrides the provider registry. */
   adapterFactory?: (media: MediaItem) => PlayerAdapter;
 }
@@ -66,6 +68,15 @@ const HEARTBEAT_DRIFT_S = 0.25;
  * wrongly abandoned as "unsyncable".
  */
 const DRIVE_STALL_TIMEOUT_MS = 20_000;
+/**
+ * Watchdog window while the server transcodes a Drive file to HLS. The encode
+ * has to download from Drive and produce its first segment before ANY bytes
+ * reach the player (the playlist answers 503 while warming up, so no progress
+ * events fire either); a large file legitimately needs minutes, not the 20 s
+ * direct-stream budget. Hard transcode failures don't wait this long: the
+ * hls.js error listener drops to the embed as soon as the server says 502.
+ */
+const DRIVE_TRANSCODE_STALL_TIMEOUT_MS = 210_000;
 
 /** Provider registry, the ONLY place that maps media kinds to adapters. */
 function adapterFor(media: MediaItem): PlayerAdapter {
@@ -199,9 +210,11 @@ export class SyncController {
     const transcoded = new Html5Adapter();
     this.adapter = transcoded;
     transcoded.onEvent((ev) => this.onPlayerEvent(ev));
-    // Re-arm the stall watchdog: the encoder needs a moment to emit its first
-    // segment, and progress events will keep pushing it back as bytes arrive.
+    // Re-arm the stall watchdog with the (much longer) transcode budget: the
+    // server must download the file from Drive and encode a first segment
+    // before any bytes reach the player.
     this.armDriveWatchdog();
+    this.opts.onTranscodeStart?.();
     useSyncDebug.getState().set({ provider: 'drive-transcode', phase: 'loading' });
     this.opts.onPhase('loading');
     void transcoded.load(
@@ -272,9 +285,12 @@ export class SyncController {
    */
   private armDriveWatchdog(): void {
     this.clearLoadTimeout();
+    const budget = this.triedTranscode
+      ? DRIVE_TRANSCODE_STALL_TIMEOUT_MS
+      : DRIVE_STALL_TIMEOUT_MS;
     this.loadTimeout = setTimeout(() => {
       if (!this.disposed && !this.adapter?.isReady()) this.fallbackToDriveEmbed('timeout');
-    }, DRIVE_STALL_TIMEOUT_MS);
+    }, budget);
   }
 
   /* ------------------------------------------------------------------ */

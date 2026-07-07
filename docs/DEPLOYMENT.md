@@ -1,6 +1,28 @@
 # Deployment guide
 
-## Option A, free split deploy: Vercel (SPA) + Render (sockets), recommended
+## Current production: AWS EC2 (havnn.in)
+
+Production runs as a single-server deployment (Option B below) on an Ubuntu
+EC2 instance:
+
+- **Process manager:** PM2 runs `node server/dist/index.js` (serves the SPA and
+  Socket.IO on one port).
+- **Reverse proxy:** Nginx terminates TLS (Let's Encrypt) for `https://havnn.in`
+  and proxies everything — including WebSocket upgrades and the `/drive/*`
+  streaming/transcoding routes — to the Node process.
+- **CI/CD:** every push to `main` triggers `.github/workflows/deploy.yml`,
+  which SSHes to the instance and runs `/home/ubuntu/deploy.sh` (pull, install,
+  build, PM2 restart).
+- **FFmpeg:** Drive transcoding requires a working ffmpeg. The server resolves
+  one at boot (`FFMPEG_PATH` → bundled `ffmpeg-static` → `ffmpeg` on PATH) and
+  logs which binary it picked; check the PM2 logs for
+  `[transcode] using ffmpeg:` after a deploy.
+
+The Render (`render.yaml`) and Vercel (`vercel.json`) configs from the earlier
+free-tier deployment have been removed; the sections below are kept as
+reference for alternative hosts.
+
+## Option A, free split deploy: Vercel (SPA) + Render (sockets)
 
 Step-by-step instructions live in the [README](../README.md#deploy-for-free-vercel--render). Summary of the moving parts:
 

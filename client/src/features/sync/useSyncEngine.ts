@@ -88,6 +88,15 @@ export function useSyncEngine(containerRef: RefObject<HTMLDivElement | null>): {
           .toast(reason === 'unknown' ? 'info' : 'error', DRIVE_FALLBACK_TEXT[reason], 'drive-fallback');
       },
       onAutoplayBlocked: () => setAutoplayBlocked(true),
+      onTranscodeStart: () => {
+        useRoomStore
+          .getState()
+          .toast(
+            'info',
+            'This format can’t play directly in a browser, converting it for synced playback — large files can take a minute or two.',
+            'drive-transcode',
+          );
+      },
       onEnded: () => {
         const st = useRoomStore.getState();
         const next = st.queue[0];
