@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 
-/** Ceiling for the ambient track; the file itself is also attenuated. */
-const AMBIENT_VOLUME = 0.35;
-const FADE_MS = 2000;
+/** Ceiling for the ambient track: clearly audible but still subtle. */
+const AMBIENT_VOLUME = 0.55;
+const FADE_MS = 2500;
 
 /**
  * Fixed, full-viewport looping video used as an ambient backdrop on the
