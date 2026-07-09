@@ -6,6 +6,7 @@ import {
   extensionOf,
   isUnplayableContainer,
   openDriveMedia,
+  openDrivePreviewStream,
   videoMimeForFilename,
 } from './driveClient';
 
@@ -98,23 +99,48 @@ export async function driveProxy(
     return;
   }
 
-  // Fail fast on containers no browser can decode: a clear error beats
-  // streaming megabytes only for the <video> element to reject them. Only the
-  // ORIGINAL file's bytes can be unplayable — the preview-stream fallback is
-  // always an H.264 MP4, whatever the original filename says.
+  // The original container can't play in <video> (MKV, AVI…). Before burning
+  // CPU on a local ffmpeg re-encode, try Google's own preview rendition of the
+  // file: it's H.264/AAC MP4 (browser-playable), faststart, Range-capable, and
+  // encoded on Google's hardware — a local re-encode of e.g. 10-bit HEVC runs
+  // slower than real time on this box, which stalls playback mid-watch. Only
+  // when Drive has no preview stream does the 415 → HLS-transcode path run.
+  // Only the ORIGINAL file's bytes can be unplayable — the preview-stream
+  // fallback is always an H.264 MP4, whatever the original filename says.
   if (media.source === 'download' && isUnplayableContainer(media.filename)) {
     media.response.body?.cancel().catch(() => {});
     const ext = extensionOf(media.filename);
-    console.log(`[drive] ${id}: unplayable container (${ext}), prewarming transcode`);
-    hooks.onUnplayable?.(id);
-    res.status(415).json({
-      error: `This video format (${ext}) can’t be played in a browser directly; it will be converted for synced playback.`,
-      code: 'unplayable-format',
-    });
-    return;
+    console.log(
+      `[drive] ${id}: state=UNPLAYABLE container .${ext} → trying Google preview stream before transcoding`,
+    );
+    try {
+      media = await openDrivePreviewStream(
+        id,
+        req.headers.range,
+        controller.signal,
+        `unplayable container .${ext}`,
+      );
+      console.log(`[drive] ${id}: state=UNPLAYABLE ✓ preview stream open, serving H.264 MP4 directly`);
+    } catch (err) {
+      if (res.headersSent || controller.signal.aborted) return;
+      const detail = err instanceof DriveError ? `${err.kind}: ${err.message}` : String(err);
+      console.warn(
+        `[drive] ${id}: state=UNPLAYABLE ✗ no preview stream (${detail}) → 415, prewarming ffmpeg HLS transcode`,
+      );
+      hooks.onUnplayable?.(id);
+      res.status(415).json({
+        error: `This video format (${ext}) can’t be played in a browser directly; it will be converted for synced playback.`,
+        code: 'unplayable-format',
+      });
+      return;
+    }
   }
 
   const upstream = media.response;
+  console.log(
+    `[drive] ${id}: state=SERVE source=${media.source} status=${upstream.status} ` +
+      `mime=${media.mime ?? 'unknown'} file="${media.filename ?? 'unknown'}"`,
+  );
   res.status(upstream.status === 206 ? 206 : 200);
   for (const h of PASS_HEADERS) {
     const v = upstream.headers.get(h);

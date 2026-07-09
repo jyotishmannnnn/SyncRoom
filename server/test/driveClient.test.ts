@@ -7,6 +7,7 @@ import {
   filenameFromDisposition,
   isUnplayableContainer,
   openDriveMedia,
+  openDrivePreviewStream,
   videoMimeForFilename,
 } from '../src/driveClient';
 
@@ -219,6 +220,70 @@ describe('openDriveMedia state machine', () => {
     await expect(
       openDriveMedia('PRIVATEFILE1', undefined, new AbortController().signal),
     ).rejects.toMatchObject({ kind: 'not-public' });
+  });
+
+  it('openDrivePreviewStream skips the download endpoint and opens the preview rendition', async () => {
+    const fmtStreamMap = encodeURIComponent(
+      '22|https://rr1.example.googlevideo/videoplayback?itag=22',
+    );
+    const calls: string[] = [];
+    const fetchMock = vi.fn(async (input: Parameters<typeof fetch>[0]) => {
+      const url = String(input);
+      calls.push(url);
+      if (url.includes('get_video_info')) {
+        return videoInfoResponse(`status=ok&title=Show.mkv&fmt_stream_map=${fmtStreamMap}`, [
+          'DRIVE_STREAM=tok; Domain=.drive.google.com; Path=/',
+        ]);
+      }
+      return videoResponse();
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const media = await openDrivePreviewStream(
+      'MKVFILE00001',
+      'bytes=0-',
+      new AbortController().signal,
+      'unplayable container .mkv',
+    );
+
+    expect(media.source).toBe('stream');
+    expect(media.mime).toBe('video/mp4');
+    expect(media.filename).toBe('Show.mkv');
+    expect(calls.some((u) => u.includes('usercontent.google.com/download'))).toBe(false);
+  });
+
+  it('openDrivePreviewStream caches the resolution so later openDriveMedia calls go straight to the stream', async () => {
+    const fmtStreamMap = encodeURIComponent(
+      '18|https://rr1.example.googlevideo/videoplayback?itag=18',
+    );
+    const calls: string[] = [];
+    const fetchMock = vi.fn(async (input: Parameters<typeof fetch>[0]) => {
+      const url = String(input);
+      calls.push(url);
+      if (url.includes('get_video_info')) {
+        return videoInfoResponse(`status=ok&title=t.mkv&fmt_stream_map=${fmtStreamMap}`);
+      }
+      return videoResponse();
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await openDrivePreviewStream('MKVFILE00002', undefined, new AbortController().signal, 'test');
+    const seek = await openDriveMedia('MKVFILE00002', 'bytes=100-', new AbortController().signal);
+
+    expect(seek.source).toBe('stream');
+    expect(calls.some((u) => u.includes('usercontent.google.com/download'))).toBe(false);
+    expect(calls.filter((u) => u.includes('get_video_info'))).toHaveLength(1);
+  });
+
+  it('openDrivePreviewStream surfaces a precise error when Drive has no preview', async () => {
+    const fetchMock = vi.fn(async () =>
+      videoInfoResponse('status=fail&reason=This+video+is+still+being+processed'),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      openDrivePreviewStream('MKVFILE00003', undefined, new AbortController().signal, 'test'),
+    ).rejects.toBeInstanceOf(DriveError);
   });
 
   it('reuses a cached stream resolution instead of re-running the flow', async () => {

@@ -219,6 +219,7 @@ export class TranscodeManager {
    */
   prewarm(id: string): void {
     if (!DRIVE_ID.test(id)) return;
+    console.log(`[transcode] ${id}: prewarm requested`);
     void this.ensure(id)
       .then((s) => s.ready)
       .catch((err: unknown) => {

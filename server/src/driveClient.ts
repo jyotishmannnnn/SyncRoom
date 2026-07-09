@@ -280,12 +280,15 @@ async function openStream(
   signal: AbortSignal,
   why: string,
 ): Promise<DriveMedia> {
+  console.log(`[drive] ${id}: state=STREAM → resolving preview stream (${why})`);
   const cached = streamCache.get(id);
   if (cached && cached.expiresAt > Date.now()) {
-    const res = await streamFetch(cached.url, cached.cookie, range, signal);
+    const res = await streamFetch(id, cached.url, cached.cookie, range, signal);
     if (res) {
+      console.log(`[drive] ${id}: state=STREAM ✓ cached URL still valid (status=${res.status})`);
       return { response: res, source: 'stream', filename: cached.filename, mime: 'video/mp4' };
     }
+    console.log(`[drive] ${id}: state=STREAM cached URL went stale, re-resolving`);
     streamCache.delete(id); // signed URL went stale; resolve fresh below
   }
 
@@ -295,7 +298,9 @@ async function openStream(
   if (status !== 'ok') {
     const reason = (info.get('reason') ?? 'no reason given').trim();
     const lower = reason.toLowerCase();
-    console.warn(`[drive] ${id}: stream fallback refused (${why}): status=${status} reason="${reason}"`);
+    console.warn(
+      `[drive] ${id}: state=STREAM ✗ get_video_info refused (${why}): status=${status} reason="${reason}"`,
+    );
     if (lower.includes('quota') || lower.includes('too many')) {
       throw new DriveError('quota', `Drive download quota exceeded and preview stream refused: ${reason}`);
     }
@@ -312,26 +317,33 @@ async function openStream(
   }
   const url = ITAG_PREFERENCE.map((itag) => streams.get(itag)).find(Boolean);
   if (!url) {
+    console.warn(
+      `[drive] ${id}: state=STREAM ✗ status=ok but no playable itags (got: ${[...streams.keys()].join(',') || 'none'})`,
+    );
     throw new DriveError('upstream', 'get_video_info returned ok but no playable streams');
   }
+  const chosen = [...streams.entries()].find(([, u]) => u === url)?.[0];
+  console.log(
+    `[drive] ${id}: state=STREAM get_video_info ok (itags ${[...streams.keys()].join(',')}), fetching itag ${chosen}`,
+  );
 
   const cookie = jar.header();
   const filename = info.get('title');
-  const res = await streamFetch(url, cookie, range, signal);
+  const res = await streamFetch(id, url, cookie, range, signal);
   if (!res) {
     throw new DriveError(
       'quota',
       'Drive download quota exceeded and the preview stream URL was refused',
     );
   }
-  const chosen = [...streams.entries()].find(([, u]) => u === url)?.[0];
-  console.log(`[drive] ${id}: serving preview stream (itag ${chosen}) — ${why}`);
+  console.log(`[drive] ${id}: state=STREAM ✓ serving preview stream (itag ${chosen}) — ${why}`);
   cacheStream(id, { url, cookie, filename, expiresAt: Date.now() + STREAM_CACHE_TTL_MS });
   return { response: res, source: 'stream', filename, mime: 'video/mp4' };
 }
 
 /** Fetch a googlevideo stream URL; null when it doesn't answer with media. */
 async function streamFetch(
+  id: string,
   url: string,
   cookie: string | null,
   range: string | undefined,
@@ -348,6 +360,10 @@ async function streamFetch(
     throw new DriveError('network', `stream fetch failed: ${String(err)}`);
   }
   if ((res.status !== 200 && res.status !== 206) || isHtml(res) || !res.body) {
+    console.warn(
+      `[drive] ${id}: state=STREAM ✗ googlevideo refused: status=${res.status} ` +
+        `content-type="${res.headers.get('content-type') ?? ''}" body=${res.body ? 'yes' : 'no'}`,
+    );
     res.body?.cancel().catch(() => {});
     return null;
   }
@@ -371,14 +387,24 @@ export async function openDriveMedia(
   if (streamCache.has(id)) return openStream(id, jar, range, signal, 'cached resolution');
 
   // DIRECT
+  console.log(`[drive] ${id}: state=DIRECT → GET download endpoint${range ? ` (range ${range})` : ''}`);
   let res = await get(`${DOWNLOAD}?id=${encodeURIComponent(id)}&export=download&confirm=t`, jar, range, signal);
 
   if (!isHtml(res)) {
-    if (res.status === 404) throw new DriveError('not-found', 'Drive file not found');
+    if (res.status === 404) {
+      console.warn(`[drive] ${id}: state=DIRECT ✗ 404 not found`);
+      throw new DriveError('not-found', 'Drive file not found');
+    }
     if (res.status === 200 || res.status === 206) {
       if (!res.body) throw new DriveError('upstream', `download returned ${res.status} with no body`);
-      return downloadMedia(res);
+      const media = downloadMedia(res);
+      console.log(
+        `[drive] ${id}: state=DIRECT ✓ media bytes (status=${res.status}, ` +
+          `file="${media.filename ?? 'unknown'}", mime=${media.mime ?? 'unknown'})`,
+      );
+      return media;
     }
+    console.warn(`[drive] ${id}: state=DIRECT ✗ status=${res.status}`);
     if (res.status === 403) throw new DriveError('not-public', `download returned 403`);
     throw new DriveError('upstream', `download returned ${res.status}`);
   }
@@ -386,15 +412,21 @@ export async function openDriveMedia(
   // CLASSIFY (+ at most one CONFIRM hop)
   for (let hop = 0; hop < 2; hop += 1) {
     const page = classifyDrivePage(await res.text(), res.url);
+    console.log(`[drive] ${id}: state=CLASSIFY (hop ${hop}) → page=${page.kind}`);
     switch (page.kind) {
       case 'virus-scan': {
         if (hop > 0) throw new DriveError('upstream', 'confirm flow looped back to interstitial');
-        console.log(`[drive] ${id}: virus-scan interstitial, resubmitting confirm form`);
+        console.log(`[drive] ${id}: state=CONFIRM → resubmitting virus-scan confirm form`);
         res = await get(page.confirmUrl, jar, range, signal);
         if (!isHtml(res)) {
-          if ((res.status === 200 || res.status === 206) && res.body) return downloadMedia(res);
+          if ((res.status === 200 || res.status === 206) && res.body) {
+            console.log(`[drive] ${id}: state=CONFIRM ✓ media bytes (status=${res.status})`);
+            return downloadMedia(res);
+          }
+          console.warn(`[drive] ${id}: state=CONFIRM ✗ status=${res.status}`);
           throw new DriveError('upstream', `confirm request returned ${res.status}`);
         }
+        console.log(`[drive] ${id}: state=CONFIRM ← HTML again, reclassifying`);
         continue; // classify the new HTML page
       }
       case 'quota':
@@ -410,4 +442,22 @@ export async function openDriveMedia(
     }
   }
   throw new DriveError('upstream', 'download flow did not converge');
+}
+
+/**
+ * Opens Google's own H.264/AAC preview rendition of a file directly, skipping
+ * the download endpoint. Used when the original file's container (MKV, AVI…)
+ * can't play in <video>: Google's preview transcode of it CAN, is faststart,
+ * supports Range, and costs this server no CPU — so it beats a local ffmpeg
+ * re-encode, which is reserved for files with no preview stream. Successful
+ * resolutions land in the same stream cache `openDriveMedia` consults, so
+ * subsequent seeks skip the download endpoint entirely.
+ */
+export function openDrivePreviewStream(
+  id: string,
+  range: string | undefined,
+  signal: AbortSignal,
+  why: string,
+): Promise<DriveMedia> {
+  return openStream(id, new CookieJar(), range, signal, why);
 }
