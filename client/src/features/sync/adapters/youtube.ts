@@ -170,14 +170,24 @@ export class YouTubeAdapter implements PlayerAdapter {
     this.player?.setVolume(Math.round(Math.min(1, Math.max(0, volume)) * 100));
   }
   getVolume(): number {
-    return (this.player?.getVolume() ?? 100) / 100;
+    // Before onReady the iframe API object exists but its methods don't;
+    // guard like the Twitch adapter so the CinemaBar poll never throws.
+    try {
+      return (this.player?.getVolume() ?? 100) / 100;
+    } catch {
+      return 1;
+    }
   }
   setMuted(muted: boolean): void {
     if (muted) this.player?.mute();
     else this.player?.unMute();
   }
   isMuted(): boolean {
-    return this.player?.isMuted() ?? false;
+    try {
+      return this.player?.isMuted() ?? false;
+    } catch {
+      return false;
+    }
   }
   setNativeControls(_visible: boolean): void {
     // The IFrame API only accepts `controls` at construction; toggling would

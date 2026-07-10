@@ -165,7 +165,7 @@ export function HomePage() {
                 {f.icon}
               </span>
               <h3 className="text-sm font-semibold">{f.title}</h3>
-              <p className="mt-1 text-xs leading-relaxed text-ink-faint">{f.text}</p>
+              <p className="mt-1 text-xs leading-relaxed text-ink-dim">{f.text}</p>
             </div>
           ))}
         </section>

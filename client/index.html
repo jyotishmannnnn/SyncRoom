@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="en" class="dark">
   <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-6Q02YNR48K"></script>
+    <!-- Google tag (gtag.js) — loaded after idle/first interaction so it never
+         competes with first paint; events queue in dataLayer meanwhile. -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag() {
@@ -10,6 +10,23 @@
       }
       gtag("js", new Date());
       gtag("config", "G-6Q02YNR48K");
+      (function () {
+        var loaded = false;
+        function loadGtag() {
+          if (loaded) return;
+          loaded = true;
+          var s = document.createElement("script");
+          s.async = true;
+          s.src = "https://www.googletagmanager.com/gtag/js?id=G-6Q02YNR48K";
+          document.head.appendChild(s);
+        }
+        window.addEventListener("load", function () {
+          setTimeout(loadGtag, 8000);
+        });
+        ["pointerdown", "keydown", "touchstart"].forEach(function (t) {
+          window.addEventListener(t, loadGtag, { once: true, passive: true });
+        });
+      })();
     </script>
 
     <meta charset="UTF-8" />
@@ -61,13 +78,32 @@
     />
     <meta name="twitter:image" content="https://havnn.in/og-image.png" />
 
-    <!-- Fonts -->
+    <!-- Background poster: the LCP element on the home/lobby pages. -->
+    <link
+      rel="preload"
+      as="image"
+      href="/havnn-bg-poster.webp"
+      type="image/webp"
+      fetchpriority="high"
+    />
+
+    <!-- Fonts: swapped in asynchronously so the stylesheet never blocks first
+         paint (display=swap shows system text meanwhile). Only the weights the
+         UI uses are requested. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600;700&display=swap"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600;700&display=swap"
+      />
+    </noscript>
 
     <!-- Icons & manifest -->
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
