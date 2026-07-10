@@ -48,7 +48,7 @@ function ParticipantRow({
             type="button"
             aria-label={`Actions for ${p.name}`}
             aria-expanded={menu}
-            className="cursor-pointer rounded-lg p-1.5 text-ink-dim transition-colors hover:bg-line/60 hover:text-ink"
+            className="cursor-pointer rounded-lg p-2.5 text-ink-dim transition-colors hover:bg-line/60 hover:text-ink"
             onClick={() => setMenu((v) => !v)}
           >
             <MoreVertical size={16} />

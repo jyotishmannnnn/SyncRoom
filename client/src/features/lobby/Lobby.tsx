@@ -79,9 +79,9 @@ export function Lobby({
       : [{ value: '', label: `Default ${fallback.toLowerCase()}` }];
 
   return (
-    <div className="flex min-h-dvh items-center justify-center p-4">
+    <div className="flex min-h-dvh justify-center overflow-y-auto p-4">
       <VideoBackground />
-      <div className="grid w-full max-w-4xl gap-6 lg:grid-cols-[3fr_2fr]">
+      <div className="my-auto grid w-full max-w-4xl gap-6 py-4 lg:grid-cols-[3fr_2fr]">
         <div className="relative aspect-video overflow-hidden rounded-2xl bg-surface-overlay shadow-2xl ring-1 ring-line animate-scale-in">
           <video
             ref={videoRef}

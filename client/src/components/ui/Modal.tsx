@@ -16,12 +16,33 @@ export function Modal({ open, onClose, title, children, wide = false }: ModalPro
 
   useEffect(() => {
     if (!open) return;
+    const opener = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') onClose();
+      // Keep Tab focus cycling inside the dialog.
+      if (e.key === 'Tab' && panelRef.current) {
+        const focusables = panelRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (!first || !last) return;
+        const active = document.activeElement;
+        if (e.shiftKey && (active === first || active === panelRef.current)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener('keydown', onKey);
     panelRef.current?.focus();
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      opener?.focus();
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -40,7 +61,7 @@ export function Modal({ open, onClose, title, children, wide = false }: ModalPro
         aria-label={title}
         tabIndex={-1}
         className={cn(
-          'glass w-full rounded-2xl p-6 shadow-2xl animate-scale-in focus:outline-none',
+          'glass max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-2xl p-4 shadow-2xl animate-scale-in focus:outline-none sm:p-6',
           wide ? 'max-w-2xl' : 'max-w-md',
         )}
       >
@@ -50,7 +71,7 @@ export function Modal({ open, onClose, title, children, wide = false }: ModalPro
             type="button"
             aria-label="Close dialog"
             onClick={onClose}
-            className="cursor-pointer rounded-lg p-2 text-ink-dim transition-colors hover:bg-surface-overlay hover:text-ink"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-ink-dim transition-colors hover:bg-surface-overlay hover:text-ink"
           >
             <X size={18} />
           </button>

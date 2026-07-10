@@ -79,12 +79,12 @@ export function MessageBubble({
       </div>
 
       {!message.deleted && (
-        <div className="mt-0.5 flex items-center gap-1 px-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+        <div className="mt-0.5 flex items-center gap-1 px-1 opacity-100 transition-opacity sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
           {message.text && (
             <button
               type="button"
               aria-label="Copy message"
-              className="cursor-pointer rounded p-1 text-ink-faint transition-colors hover:text-ink"
+              className="cursor-pointer rounded p-2 text-ink-faint transition-colors hover:text-ink"
               onClick={() => void copy()}
             >
               {copied ? <Check size={13} className="text-success" /> : <Copy size={13} />}
@@ -94,7 +94,7 @@ export function MessageBubble({
             <button
               type="button"
               aria-label="Delete message"
-              className="cursor-pointer rounded p-1 text-ink-faint transition-colors hover:text-danger"
+              className="cursor-pointer rounded p-2 text-ink-faint transition-colors hover:text-danger"
               onClick={() => socket.emit('chat:delete', message.id)}
             >
               <Trash2 size={13} />

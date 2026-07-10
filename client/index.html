@@ -13,24 +13,26 @@
     </script>
 
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0c0d14" />
 
-    <title>Havnn | Watch Movies & Videos Together in Perfect Sync</title>
+    <title>HAVNN | Watch YouTube & Google Drive Videos Together in Sync</title>
 
     <meta
       name="description"
-      content="Havnn lets friends and couples watch movies, videos, and shows together in perfect sync with crystal-clear video calls. Create a watch party in seconds."
+      content="HAVNN is a free watch-together platform: watch YouTube, Google Drive videos and movies with friends in perfect sync, with crystal-clear video calls. No accounts, no installs — create a room and press play."
     />
 
     <meta
       name="keywords"
-      content="Havnn, watch party, watch together, movie night, sync videos, video calls, online movie watching, watch movies together"
+      content="HAVNN, watch together, watch party, watch YouTube together, watch Google Drive videos together, long distance movie watching, video sync platform, watch videos online together, movie night, video calls"
     />
 
-    
-    <meta name="author" content="Havnn" />
+    <meta name="author" content="HAVNN" />
     <meta name="robots" content="index, follow" />
+    <meta name="application-name" content="HAVNN" />
+    <meta name="apple-mobile-web-app-title" content="HAVNN" />
 
     <!-- Canonical -->
     <link rel="canonical" href="https://havnn.in/" />
@@ -38,32 +40,26 @@
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://havnn.in/" />
-    <meta
-      property="og:title"
-      content="Havnn | Watch Movies & Videos Together in Perfect Sync"
-    />
+    <meta property="og:title" content="HAVNN | Watch YouTube & Google Drive Videos Together in Sync" />
     <meta
       property="og:description"
-      content="Watch movies and videos together in perfect sync with crystal-clear video calls using Havnn."
+      content="Watch YouTube, Google Drive videos and movies together in perfect sync with crystal-clear video calls. No accounts, no installs."
     />
-    <meta property="og:site_name" content="Havnn" />
-
-    <!-- Uncomment after adding an OG image -->
-    <!-- <meta property="og:image" content="https://havnn.in/og-image.png" /> -->
+    <meta property="og:site_name" content="HAVNN" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:image" content="https://havnn.in/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="HAVNN — watch together, perfectly in sync" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta
-      name="twitter:title"
-      content="Havnn | Watch Movies & Videos Together in Perfect Sync"
-    />
+    <meta name="twitter:title" content="HAVNN | Watch YouTube & Google Drive Videos Together in Sync" />
     <meta
       name="twitter:description"
-      content="Watch movies and videos together in perfect sync with crystal-clear video calls."
+      content="Watch YouTube, Google Drive videos and movies together in perfect sync with crystal-clear video calls."
     />
-
-    <!-- Uncomment after adding an OG image -->
-    <!-- <meta name="twitter:image" content="https://havnn.in/og-image.png" /> -->
+    <meta name="twitter:image" content="https://havnn.in/og-image.png" />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -73,11 +69,58 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap"
     />
 
-    <!-- Favicon -->
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Crect width='240' height='240' rx='56' fill='%232E6FB0'/%3E%3Cpath d='M164 196.2A88 88 0 1 1 196.2 164' fill='none' stroke='white' stroke-width='14' stroke-linecap='round'/%3E%3Ccircle cx='120' cy='115' r='24' fill='white'/%3E%3C/svg%3E"
-    />
+    <!-- Icons & manifest -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://havnn.in/#organization",
+            "name": "HAVNN",
+            "url": "https://havnn.in/",
+            "description": "HAVNN is a watch-together platform for synchronized video watching with built-in video calls.",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://havnn.in/android-chrome-512x512.png",
+              "width": 512,
+              "height": 512
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://havnn.in/#website",
+            "name": "HAVNN",
+            "url": "https://havnn.in/",
+            "description": "Watch YouTube, Google Drive videos and movies together in perfect sync with crystal-clear video calls.",
+            "publisher": { "@id": "https://havnn.in/#organization" },
+            "inLanguage": "en"
+          },
+          {
+            "@type": "WebApplication",
+            "name": "HAVNN",
+            "url": "https://havnn.in/",
+            "applicationCategory": "EntertainmentApplication",
+            "operatingSystem": "Any",
+            "browserRequirements": "Requires a modern web browser",
+            "description": "Free watch-together platform for long-distance movie nights: synchronized YouTube and Google Drive playback with peer-to-peer video calls.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            }
+          }
+        ]
+      }
+    </script>
   </head>
 
   <body>

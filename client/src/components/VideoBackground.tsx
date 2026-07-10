@@ -18,6 +18,9 @@ const FADE_MS = 2500;
  */
 export function VideoBackground() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  // Skip mounting the video entirely under reduced-motion: the poster shows
+  // instead and the multi-megabyte clip is never downloaded.
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   useEffect(() => {
     // Under reduced-motion the video is hidden behind the poster; playing
@@ -53,22 +56,25 @@ export function VideoBackground() {
 
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      <img
-        className="hidden h-full w-full object-cover opacity-90 motion-reduce:block"
-        src="/havnn-bg-poster.jpg"
-        alt=""
-      />
-      <video
-        ref={videoRef}
-        className="h-full w-full object-cover opacity-95 motion-reduce:hidden"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        poster="/havnn-bg-poster.jpg"
-        src="/havnn-bg.mp4"
-      />
+      {reducedMotion ? (
+        <img
+          className="h-full w-full object-cover opacity-90"
+          src="/havnn-bg-poster.jpg"
+          alt=""
+        />
+      ) : (
+        <video
+          ref={videoRef}
+          className="h-full w-full object-cover opacity-95"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster="/havnn-bg-poster.jpg"
+          src="/havnn-bg.mp4"
+        />
+      )}
       {/* Scrim: a light tint toward the theme surface so content reads clearly
           while the blossoms stay prominent, fading the edges into the page. */}
       <div className="absolute inset-0 bg-surface/25" />

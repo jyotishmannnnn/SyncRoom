@@ -76,7 +76,7 @@ export function SyncPanel() {
               <button
                 type="button"
                 aria-label="Stop watching"
-                className="cursor-pointer rounded-md p-1 text-ink-faint transition-colors hover:text-danger"
+                className="cursor-pointer rounded-md p-2 text-ink-faint transition-colors hover:text-danger"
                 onClick={() => socket.emit('sync:clear')}
               >
                 <X size={16} />
@@ -139,11 +139,11 @@ export function SyncPanel() {
                   {item.title}
                 </p>
                 {canControl && (
-                  <span className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                  <span className="flex shrink-0 gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
                     <button
                       type="button"
                       aria-label={`Play ${item.title}`}
-                      className="cursor-pointer rounded-md p-1.5 text-ink-dim transition-colors hover:text-accent"
+                      className="cursor-pointer rounded-md p-2 text-ink-dim transition-colors hover:text-accent"
                       onClick={() => socket.emit('queue:play', item.id)}
                     >
                       <Play size={14} />
@@ -151,7 +151,7 @@ export function SyncPanel() {
                     <button
                       type="button"
                       aria-label={`Remove ${item.title}`}
-                      className="cursor-pointer rounded-md p-1.5 text-ink-dim transition-colors hover:text-danger"
+                      className="cursor-pointer rounded-md p-2 text-ink-dim transition-colors hover:text-danger"
                       onClick={() => socket.emit('queue:remove', item.id)}
                     >
                       <Trash2 size={14} />

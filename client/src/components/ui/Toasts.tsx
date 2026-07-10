@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { useRoomStore, type Toast } from '@/store/room';
-import { cn } from '@/lib/utils';
 
 const icons = {
   info: <Info size={16} className="text-accent" />,
@@ -17,13 +16,9 @@ function ToastItem({ toast }: { toast: Toast }) {
     return () => clearTimeout(t);
   }, [toast.id, toast.renewedAt, dismiss]);
   return (
-    <div
-      className={cn(
-        'glass pointer-events-auto flex items-center gap-2.5 rounded-xl px-4 py-3 shadow-xl animate-slide-up',
-      )}
-    >
+    <div className="glass pointer-events-auto flex min-w-0 items-center gap-2.5 rounded-xl px-4 py-3 shadow-xl animate-slide-up">
       {icons[toast.kind]}
-      <p className="text-sm">{toast.text}</p>
+      <p className="min-w-0 break-words text-sm">{toast.text}</p>
     </div>
   );
 }

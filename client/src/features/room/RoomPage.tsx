@@ -337,7 +337,7 @@ export function RoomPage() {
   const panelTitle = panel === 'chat' ? 'Chat' : panel === 'people' ? 'People' : 'Watch together';
 
   return (
-    <div ref={pageRef} className="flex h-dvh flex-col bg-surface">
+    <div ref={pageRef} className="flex h-dvh flex-col overflow-x-hidden bg-surface">
       <TopBar stats={stats} onOpenSettings={() => setSettingsOpen(true)} />
 
       <div className="flex min-h-0 flex-1 gap-3 px-3 pb-2">

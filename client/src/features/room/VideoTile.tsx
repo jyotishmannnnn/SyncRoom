@@ -162,7 +162,7 @@ export function VideoTile({
             <button
               type="button"
               aria-label={`Picture in picture: ${name}`}
-              className="cursor-pointer rounded-md p-1 text-white/70 opacity-0 transition-all hover:text-white group-hover:opacity-100"
+              className="cursor-pointer rounded-md p-1.5 text-white/70 opacity-100 transition-all hover:text-white sm:opacity-0 sm:group-hover:opacity-100"
               onClick={() => void pip()}
             >
               <PictureInPicture2 size={14} />

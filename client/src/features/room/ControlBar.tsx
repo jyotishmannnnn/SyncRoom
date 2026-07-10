@@ -43,7 +43,7 @@ export function ControlBar({
     setPanel(panel === kind ? null : kind);
 
   return (
-    <div className="glass mx-auto flex w-fit items-center gap-2 rounded-2xl px-3 py-2 shadow-2xl animate-slide-up">
+    <div className="glass mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-1.5 rounded-2xl px-2 py-2 shadow-2xl animate-slide-up sm:gap-2 sm:px-3">
       <IconButton
         label={micOn ? 'Mute microphone (M)' : 'Unmute microphone (M)'}
         danger={!micOn}

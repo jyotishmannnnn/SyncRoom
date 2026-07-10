@@ -62,7 +62,7 @@ export function TopBar({
           type="button"
           onClick={() => void copy()}
           aria-label="Copy room link"
-          className="group flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-1 transition-colors hover:bg-surface-overlay"
+          className="group flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-surface-overlay"
         >
           <span className="truncate font-mono text-sm font-medium">{room.code}</span>
           {copied ? (
@@ -105,7 +105,7 @@ export function TopBar({
         <button
           type="button"
           aria-label="Settings"
-          className="cursor-pointer rounded-xl border border-line bg-surface-raised p-2.5 text-ink-dim transition-colors hover:text-ink"
+          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-line bg-surface-raised text-ink-dim transition-colors hover:text-ink"
           onClick={onOpenSettings}
         >
           <Settings size={18} />

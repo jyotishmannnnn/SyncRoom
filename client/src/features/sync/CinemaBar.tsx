@@ -173,7 +173,7 @@ export function CinemaBar({
             title={canControl ? undefined : 'Only the host can control playback'}
             disabled={!canControl}
             onClick={togglePlay}
-            className="cursor-pointer rounded-full p-2 text-white transition-colors hover:bg-white/15 disabled:opacity-40"
+            className="cursor-pointer rounded-full p-2.5 text-white transition-colors hover:bg-white/15 disabled:opacity-40"
           >
             {playing ? <Pause size={20} /> : <Play size={20} />}
           </button>
@@ -186,12 +186,12 @@ export function CinemaBar({
               setMuted(next);
               player.setMuted(next);
             }}
-            className="cursor-pointer rounded-full p-2 text-white transition-colors hover:bg-white/15"
+            className="cursor-pointer rounded-full p-2.5 text-white transition-colors hover:bg-white/15"
           >
             {muted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
           <Range
-            className="h-1 w-20"
+            className="hidden h-1 w-20 sm:block"
             value={muted ? 0 : volume}
             max={1}
             label="Volume"
@@ -209,7 +209,7 @@ export function CinemaBar({
                   aria-label="Chat overlay"
                   onClick={() => setPanel(panel === 'chat' ? null : 'chat')}
                   className={cn(
-                    'cursor-pointer rounded-full p-2 text-white transition-colors hover:bg-white/15',
+                    'cursor-pointer rounded-full p-2.5 text-white transition-colors hover:bg-white/15',
                     panel === 'chat' && 'bg-white/20',
                   )}
                 >
@@ -226,7 +226,7 @@ export function CinemaBar({
                 aria-label="Participants overlay"
                 onClick={() => setPanel(panel === 'people' ? null : 'people')}
                 className={cn(
-                  'cursor-pointer rounded-full p-2 text-white transition-colors hover:bg-white/15',
+                  'cursor-pointer rounded-full p-2.5 text-white transition-colors hover:bg-white/15',
                   panel === 'people' && 'bg-white/20',
                 )}
               >
@@ -236,7 +236,7 @@ export function CinemaBar({
                 type="button"
                 aria-label="Leave room"
                 onClick={onLeave}
-                className="cursor-pointer rounded-full bg-danger/90 p-2 text-white transition-colors hover:bg-danger"
+                className="cursor-pointer rounded-full bg-danger/90 p-2.5 text-white transition-colors hover:bg-danger"
               >
                 <PhoneOff size={18} />
               </button>
@@ -247,7 +247,7 @@ export function CinemaBar({
             type="button"
             aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
             onClick={onToggleFullscreen}
-            className="cursor-pointer rounded-full p-2 text-white transition-colors hover:bg-white/15"
+            className="cursor-pointer rounded-full p-2.5 text-white transition-colors hover:bg-white/15"
           >
             {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
           </button>

@@ -15,7 +15,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const inputId = id ?? autoId;
   const hintId = `${inputId}-hint`;
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1.5">
       {label && (
         <label htmlFor={inputId} className="text-sm font-medium text-ink-dim">
           {label}
@@ -27,7 +27,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         aria-invalid={Boolean(error)}
         aria-describedby={hint || error ? hintId : undefined}
         className={cn(
-          'h-11 rounded-xl border bg-surface-raised px-3.5 text-[15px] text-ink placeholder:text-ink-faint',
+          'h-11 w-full min-w-0 rounded-xl border bg-surface-raised px-3.5 text-[15px] text-ink placeholder:text-ink-faint',
           'transition-colors duration-150 focus:border-accent focus:outline-none',
           error ? 'border-danger' : 'border-line',
           className,

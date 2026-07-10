@@ -179,7 +179,7 @@ export function ChatPanel() {
           </span>
           <button
             type="button"
-            className="cursor-pointer font-medium text-danger"
+            className="shrink-0 cursor-pointer rounded p-2 font-medium text-danger"
             onClick={() => setPendingFile(null)}
           >
             Remove
@@ -188,7 +188,7 @@ export function ChatPanel() {
       )}
 
       {showEmoji && (
-        <div className="glass mx-4 mb-2 grid grid-cols-8 gap-1 rounded-xl p-2 animate-scale-in">
+        <div className="glass mx-4 mb-2 grid grid-cols-6 gap-1 rounded-xl p-2 animate-scale-in sm:grid-cols-8">
           {EMOJI.map((e) => (
             <button
               key={e}

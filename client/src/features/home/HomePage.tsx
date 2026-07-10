@@ -83,7 +83,7 @@ export function HomePage() {
 
       <main className="relative z-10 mx-auto max-w-6xl px-6 pb-16">
         <section className="mx-auto max-w-2xl pt-10 text-center sm:pt-20">
-          <h1 className="animate-slide-up font-display text-5xl font-medium leading-[1.05] tracking-tight sm:text-7xl">
+          <h1 className="animate-slide-up font-display text-[clamp(2.5rem,3.5vw+2rem,4.5rem)] font-medium leading-[1.05] tracking-tight">
             Meet, share and <span className="italic text-gold">watch together</span>
           </h1>
           <p className="mx-auto mt-5 max-w-lg animate-slide-up text-base leading-relaxed text-ink-dim sm:text-lg">
@@ -101,7 +101,7 @@ export function HomePage() {
               <Plus size={18} className="text-accent" /> New room
             </h2>
             <div className="flex items-end gap-2">
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <Input
                   label="Room code"
                   value={createCode}
