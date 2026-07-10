@@ -17,6 +17,7 @@ import { TopBar } from './TopBar';
 import { VideoGrid } from './VideoGrid';
 import { FloatingThumbs } from './FloatingThumbs';
 import { ControlBar } from './ControlBar';
+import { SEEK_STEP_S, seekBy, toggleCamera, toggleMic } from './mediaActions';
 import { ParticipantsPanel } from './ParticipantsPanel';
 import { ChatPanel } from '@/features/chat/ChatPanel';
 import { SyncPanel } from '@/features/sync/SyncPanel';
@@ -289,9 +290,11 @@ export function RoomPage() {
 
   const shortcuts = useMemo<ShortcutMap>(
     () => ({
-      m: () => setMedia({ micOn: !useRoomStore.getState().micOn }),
-      v: () => setMedia({ cameraOn: !useRoomStore.getState().cameraOn }),
+      m: toggleMic,
+      v: toggleCamera,
       s: () => void toggleShare(),
+      arrowleft: () => void seekBy(-SEEK_STEP_S),
+      arrowright: () => void seekBy(SEEK_STEP_S),
       c: () => setPanel(useRoomStore.getState().panel === 'chat' ? null : 'chat'),
       p: () => setPanel(useRoomStore.getState().panel === 'people' ? null : 'people'),
       w: () => setPanel(useRoomStore.getState().panel === 'media' ? null : 'media'),
@@ -299,7 +302,7 @@ export function RoomPage() {
       space: togglePlayback,
       escape: () => setPanel(null),
     }),
-    [setMedia, setPanel, toggleShare, toggleFullscreen, togglePlayback],
+    [setPanel, toggleShare, toggleFullscreen, togglePlayback],
   );
   useKeyboardShortcuts(joined ? shortcuts : {});
 
@@ -409,8 +412,8 @@ export function RoomPage() {
 
       <footer className="px-3 pb-3">
         <ControlBar
-          onToggleMic={() => setMedia({ micOn: !micOn })}
-          onToggleCamera={() => setMedia({ cameraOn: !cameraOn })}
+          onToggleMic={toggleMic}
+          onToggleCamera={toggleCamera}
           onToggleShare={() => void toggleShare()}
           onLeave={leave}
           onToggleFullscreen={toggleFullscreen}

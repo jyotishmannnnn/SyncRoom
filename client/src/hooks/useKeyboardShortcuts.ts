@@ -13,6 +13,7 @@ export const SHORTCUT_HELP: Array<{ keys: string; action: string }> = [
   { keys: 'W', action: 'Toggle watch-together panel' },
   { keys: 'F', action: 'Toggle fullscreen' },
   { keys: 'Space', action: 'Play / pause synced media' },
+  { keys: '← / →', action: 'Seek synced media −5s / +5s' },
   { keys: 'Esc', action: 'Close panel or dialog' },
 ];
 

@@ -3,6 +3,8 @@ import { GripHorizontal } from 'lucide-react';
 import type { RemoteFeed } from '@/features/call/usePeerConnections';
 import type { PeerStats } from '@/features/call/useCallStats';
 import { useRoomStore } from '@/store/room';
+import { useSettings } from '@/store/settings';
+import { useLocalPrefs } from '@/store/localPrefs';
 import { cn } from '@/lib/utils';
 import { VideoTile } from './VideoTile';
 
@@ -23,6 +25,10 @@ export function FloatingThumbs({ localStream, screenStream, feeds, stats }: Floa
   const micOn = useRoomStore((s) => s.micOn);
   const cameraOn = useRoomStore((s) => s.cameraOn);
   const participants = useRoomStore((s) => s.room?.participants ?? []);
+  // Same self-mirroring rule as VideoGrid: persistent setting XOR the
+  // session-local flip. CSS-only, never affects the transmitted stream.
+  const mirrorSelf = useSettings((s) => s.mirrorVideo);
+  const flipPreview = useLocalPrefs((s) => s.flipPreview);
 
   const boxRef = useRef<HTMLDivElement>(null);
   /** null = default anchor (top-right); set on first drag. */
@@ -88,6 +94,7 @@ export function FloatingThumbs({ localStream, screenStream, feeds, stats }: Floa
             micOn={micOn}
             cameraOn={cameraOn}
             isScreen={screenStream !== null}
+            mirrored={mirrorSelf !== flipPreview}
             className="aspect-video w-40 shadow-2xl"
           />
         )}

@@ -1,11 +1,18 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import {
+  Camera,
+  CameraOff,
+  FlipHorizontal2,
   Maximize,
   MessageSquare,
+  Mic,
+  MicOff,
   Minimize,
   Pause,
   PhoneOff,
   Play,
+  Rewind,
+  FastForward,
   Users,
   Volume2,
   VolumeX,
@@ -13,6 +20,8 @@ import {
 import { expectedTime } from '@syncroom/shared';
 import { socket, serverNow } from '@/lib/socket';
 import { canSelfControl, useRoomStore } from '@/store/room';
+import { useLocalPrefs } from '@/store/localPrefs';
+import { SEEK_STEP_S, seekBy, toggleCamera, toggleMic } from '@/features/room/mediaActions';
 import { cn, formatDuration } from '@/lib/utils';
 import type { LocalPlayerFacade } from './useSyncEngine';
 
@@ -83,6 +92,10 @@ export function CinemaBar({
   const panel = useRoomStore((s) => s.panel);
   const setPanel = useRoomStore((s) => s.setPanel);
   const unread = useRoomStore((s) => s.unreadChat);
+  const micOn = useRoomStore((s) => s.micOn);
+  const cameraOn = useRoomStore((s) => s.cameraOn);
+  const flipPreview = useLocalPrefs((s) => s.flipPreview);
+  const toggleFlipPreview = useLocalPrefs((s) => s.toggleFlipPreview);
 
   const [playhead, setPlayhead] = useState<{
     time: number;
@@ -180,6 +193,33 @@ export function CinemaBar({
 
           <button
             type="button"
+            aria-label={`Rewind ${SEEK_STEP_S} seconds`}
+            title={
+              canControl ? `Rewind ${SEEK_STEP_S} seconds (←)` : 'Only the host can control playback'
+            }
+            disabled={!canControl || !(playhead?.seekable ?? false)}
+            onClick={() => seekBy(-SEEK_STEP_S)}
+            className="cursor-pointer rounded-full p-2.5 text-white transition-colors hover:bg-white/15 disabled:opacity-40"
+          >
+            <Rewind size={18} />
+          </button>
+          <button
+            type="button"
+            aria-label={`Forward ${SEEK_STEP_S} seconds`}
+            title={
+              canControl
+                ? `Forward ${SEEK_STEP_S} seconds (→)`
+                : 'Only the host can control playback'
+            }
+            disabled={!canControl || !(playhead?.seekable ?? false)}
+            onClick={() => seekBy(SEEK_STEP_S)}
+            className="cursor-pointer rounded-full p-2.5 text-white transition-colors hover:bg-white/15 disabled:opacity-40"
+          >
+            <FastForward size={18} />
+          </button>
+
+          <button
+            type="button"
             aria-label={muted || volume === 0 ? 'Unmute' : 'Mute'}
             onClick={() => {
               const next = !(muted || volume === 0);
@@ -203,6 +243,42 @@ export function CinemaBar({
 
           {isFullscreen && (
             <>
+              <button
+                type="button"
+                aria-label={flipPreview ? 'Unflip camera preview' : 'Flip camera preview'}
+                title={flipPreview ? 'Unflip camera preview' : 'Flip camera preview'}
+                onClick={toggleFlipPreview}
+                className={cn(
+                  'cursor-pointer rounded-full p-2.5 text-white transition-colors hover:bg-white/15',
+                  flipPreview && 'bg-white/20',
+                )}
+              >
+                <FlipHorizontal2 size={18} />
+              </button>
+              <button
+                type="button"
+                aria-label={micOn ? 'Mute microphone' : 'Unmute microphone'}
+                title={micOn ? 'Mute microphone (M)' : 'Unmute microphone (M)'}
+                onClick={toggleMic}
+                className={cn(
+                  'cursor-pointer rounded-full p-2.5 text-white transition-colors hover:bg-white/15',
+                  !micOn && 'bg-danger/90 hover:bg-danger',
+                )}
+              >
+                {micOn ? <Mic size={18} /> : <MicOff size={18} />}
+              </button>
+              <button
+                type="button"
+                aria-label={cameraOn ? 'Turn camera off' : 'Turn camera on'}
+                title={cameraOn ? 'Turn camera off (V)' : 'Turn camera on (V)'}
+                onClick={toggleCamera}
+                className={cn(
+                  'cursor-pointer rounded-full p-2.5 text-white transition-colors hover:bg-white/15',
+                  !cameraOn && 'bg-danger/90 hover:bg-danger',
+                )}
+              >
+                {cameraOn ? <Camera size={18} /> : <CameraOff size={18} />}
+              </button>
               <span className="relative">
                 <button
                   type="button"

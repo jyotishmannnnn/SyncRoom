@@ -4,11 +4,13 @@ import {
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type RefObject,
 } from 'react';
-import { AlertTriangle, Loader2, Play } from 'lucide-react';
+import { AlertTriangle, FastForward, Loader2, Play, Rewind } from 'lucide-react';
 import { useRoomStore } from '@/store/room';
+import { SEEK_STEP_S, seekBy } from '@/features/room/mediaActions';
 import { cn } from '@/lib/utils';
 import { ChatPanel } from '@/features/chat/ChatPanel';
 import { ParticipantsPanel } from '@/features/room/ParticipantsPanel';
@@ -77,6 +79,40 @@ export function PlayerStage({
   const barVisible = active || barHover || !playing;
   const hideCursor = isFullscreen && !barVisible && panel === null;
 
+  /* ---------- touch: YouTube-style double-tap seek on the side zones ---------- */
+  const lastTap = useRef<{ at: number; zone: 'left' | 'mid' | 'right' } | null>(null);
+  const lastPointerType = useRef('mouse');
+  const [tapSeek, setTapSeek] = useState<'back' | 'fwd' | null>(null);
+  const tapSeekTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (tapSeekTimer.current) clearTimeout(tapSeekTimer.current);
+    },
+    [],
+  );
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>): void => {
+    poke(); // single tap / click always reveals the controls
+    lastPointerType.current = e.pointerType;
+    if (e.pointerType !== 'touch') return;
+    const target = e.target as HTMLElement;
+    if (target.closest('button, input, a, [role="dialog"], aside')) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const zone = x < 1 / 3 ? 'left' : x > 2 / 3 ? 'right' : 'mid';
+    const now = performance.now();
+    const prev = lastTap.current;
+    lastTap.current = { at: now, zone };
+    if (!prev || now - prev.at > 350 || prev.zone !== zone || zone === 'mid') return;
+    lastTap.current = null; // consume: a third tap starts a new gesture
+    // Same permission-checked sync:seek pipeline as the timeline slider.
+    if (seekBy(zone === 'left' ? -SEEK_STEP_S : SEEK_STEP_S)) {
+      setTapSeek(zone === 'left' ? 'back' : 'fwd');
+      if (tapSeekTimer.current) clearTimeout(tapSeekTimer.current);
+      tapSeekTimer.current = setTimeout(() => setTapSeek(null), 700);
+    }
+  };
+
   /* The cinema bar owns the surface for HTML5 media: native controls stay
      off so double-click can't trigger the browser's video-element fullscreen
      (which would bypass the cinema layout). YouTube keeps its own chrome,
@@ -86,6 +122,8 @@ export function PlayerStage({
   }, [playerReady, player]);
 
   const onDoubleClick = (e: ReactMouseEvent): void => {
+    /* Touch double-taps are the seek gesture above, never fullscreen. */
+    if (lastPointerType.current === 'touch') return;
     const target = e.target as HTMLElement;
     if (target.closest('button, input, a, [role="dialog"], aside')) return;
     onToggleFullscreen();
@@ -104,7 +142,7 @@ export function PlayerStage({
         hideCursor && 'cursor-idle',
       )}
       onPointerMove={poke}
-      onPointerDown={poke}
+      onPointerDown={onPointerDown}
       onDoubleClick={onDoubleClick}
     >
       {driveFallback && (
@@ -142,6 +180,22 @@ export function PlayerStage({
 
       <DebugOverlay />
       <div ref={containerRef} className="min-h-0 w-full flex-1" />
+
+      {/* Double-tap seek feedback (visual only, seek already sent). */}
+      {tapSeek && (
+        <div
+          aria-hidden
+          className={cn(
+            'pointer-events-none absolute inset-y-0 z-20 flex w-1/3 items-center justify-center',
+            tapSeek === 'back' ? 'left-0' : 'right-0',
+          )}
+        >
+          <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-4 py-2 text-sm font-semibold text-white backdrop-blur animate-scale-in">
+            {tapSeek === 'back' ? <Rewind size={16} /> : <FastForward size={16} />}
+            {tapSeek === 'back' ? `−${SEEK_STEP_S}s` : `+${SEEK_STEP_S}s`}
+          </span>
+        </div>
+      )}
 
       {/* Cinema chrome, strictly local, never emits fullscreen state. */}
       {!driveFallback && (

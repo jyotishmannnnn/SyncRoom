@@ -1,6 +1,7 @@
 import {
   Camera,
   CameraOff,
+  FlipHorizontal2,
   Maximize,
   MessageSquare,
   Mic,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import { IconButton } from '@/components/ui/IconButton';
 import { useRoomStore } from '@/store/room';
+import { useLocalPrefs } from '@/store/localPrefs';
 import { cn } from '@/lib/utils';
 
 export interface ControlBarProps {
@@ -35,6 +37,8 @@ export function ControlBar({
   const micOn = useRoomStore((s) => s.micOn);
   const cameraOn = useRoomStore((s) => s.cameraOn);
   const sharing = useRoomStore((s) => s.sharing);
+  const flipPreview = useLocalPrefs((s) => s.flipPreview);
+  const toggleFlipPreview = useLocalPrefs((s) => s.toggleFlipPreview);
   const panel = useRoomStore((s) => s.panel);
   const setPanel = useRoomStore((s) => s.setPanel);
   const unread = useRoomStore((s) => s.unreadChat);
@@ -57,6 +61,13 @@ export function ControlBar({
         onClick={onToggleCamera}
       >
         {cameraOn ? <Camera size={19} /> : <CameraOff size={19} />}
+      </IconButton>
+      <IconButton
+        label={flipPreview ? 'Unflip camera preview' : 'Flip camera preview'}
+        active={flipPreview}
+        onClick={toggleFlipPreview}
+      >
+        <FlipHorizontal2 size={19} />
       </IconButton>
       <IconButton
         label={sharing ? 'Stop sharing screen (S)' : 'Share screen (S)'}
