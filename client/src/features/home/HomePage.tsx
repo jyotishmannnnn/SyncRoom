@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/Logo';
+import { Footer } from '@/components/Footer';
 import { VideoBackground } from '@/components/VideoBackground';
 
 const FEATURES = [
@@ -170,6 +171,8 @@ export function HomePage() {
           ))}
         </section>
       </main>
+
+      <Footer />
     </div>
   );
 }

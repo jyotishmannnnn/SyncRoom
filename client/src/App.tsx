@@ -8,6 +8,13 @@ import { HomePage } from '@/features/home/HomePage';
 const RoomPage = lazy(() =>
   import('@/features/room/RoomPage').then((m) => ({ default: m.RoomPage })),
 );
+/* Legal pages are rarely visited, keep them out of the initial bundle. */
+const PrivacyPage = lazy(() =>
+  import('@/features/legal/PrivacyPage').then((m) => ({ default: m.PrivacyPage })),
+);
+const TermsPage = lazy(() =>
+  import('@/features/legal/TermsPage').then((m) => ({ default: m.TermsPage })),
+);
 
 function PageSpinner() {
   return (
@@ -25,6 +32,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/room/:code" element={<RoomPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
           <Route path="*" element={<HomePage />} />
         </Routes>
       </Suspense>

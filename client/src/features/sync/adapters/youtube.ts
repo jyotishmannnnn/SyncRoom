@@ -40,6 +40,23 @@ declare global {
   }
 }
 
+/**
+ * Rates the IFrame API actually supports. `setPlaybackRate` with any other
+ * value is rounded DOWN by YouTube (a 0.97 drift nudge becomes 0.75!), which
+ * both overshoots the correction and desyncs the intent ledger (the echoed
+ * rate no longer matches the requested one), so every requested rate must be
+ * snapped to the nearest supported step before it reaches the player.
+ */
+const YT_SUPPORTED_RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
+
+function snapToSupportedRate(rate: number): number {
+  let best: number = YT_SUPPORTED_RATES[0];
+  for (const r of YT_SUPPORTED_RATES) {
+    if (Math.abs(r - rate) < Math.abs(best - rate)) best = r;
+  }
+  return best;
+}
+
 let apiPromise: Promise<YTNamespace> | null = null;
 
 function loadYouTubeApi(): Promise<YTNamespace> {
@@ -145,8 +162,15 @@ export class YouTubeAdapter implements PlayerAdapter {
     this.player?.seekTo(time, true);
   }
   setPlaybackRate(rate: number): void {
-    this.lastRate = rate;
-    this.player?.setPlaybackRate(rate);
+    // Fractional drift nudges (e.g. 0.97) snap to the nearest supported rate
+    // (1 for all nudge magnitudes), so normal viewing stays at 1× and drift
+    // beyond the hard-seek threshold is corrected by a seek instead of an
+    // oscillating rate. `lastRate` records what the player will actually
+    // report, so the seek-watch poll never re-broadcasts a snapped rate.
+    const snapped = snapToSupportedRate(rate);
+    if (snapped === this.lastRate && this.player?.getPlaybackRate() === snapped) return;
+    this.lastRate = snapped;
+    this.player?.setPlaybackRate(snapped);
   }
   getCurrentTime(): number {
     return this.player?.getCurrentTime() ?? 0;

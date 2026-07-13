@@ -76,6 +76,16 @@ export function PlayerStage({
     };
   }, [poke]);
 
+  /* Fullscreen transitions relayout the bar away from the pointer without a
+     mouseleave, which would latch barHover=true and keep the controls stuck
+     visible forever (or, with a dead idle timer, stuck hidden). Reset the
+     hover latch and restart the idle timer on every transition so fading
+     keeps working after any number of fullscreen toggles. */
+  useEffect(() => {
+    setBarHover(false);
+    poke();
+  }, [isFullscreen, poke]);
+
   const barVisible = active || barHover || !playing;
   const hideCursor = isFullscreen && !barVisible && panel === null;
 

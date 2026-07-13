@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, CheckCheck, Copy, Download, Trash2 } from 'lucide-react';
 import type { ChatMessage } from '@syncroom/shared';
 import { socket } from '@/lib/socket';
@@ -15,6 +15,13 @@ export function MessageBubble({
   const selfId = useRoomStore((s) => s.selfId);
   const toast = useRoomStore((s) => s.toast);
   const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    },
+    [],
+  );
   const mine = message.senderId === selfId;
   const readByAll = participantCount > 1 && message.readBy.length >= participantCount;
 
@@ -22,7 +29,8 @@ export function MessageBubble({
     try {
       await navigator.clipboard.writeText(message.text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopied(false), 1500);
     } catch {
       toast('error', 'Clipboard unavailable.');
     }

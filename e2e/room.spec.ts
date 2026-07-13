@@ -1,6 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const uniqueCode = (): string => `e2e-${Date.now().toString(36)}-${test.info().workerIndex}`;
+/* Room codes are capped at 10 chars (ROOM_CODE_MAX), so use the low bits of
+   the timestamp: "e2e" + 5 base36 chars + worker index stays within the cap
+   while remaining unique enough across runs and workers. */
+const uniqueCode = (): string =>
+  `e2e${Date.now().toString(36).slice(-5)}${test.info().workerIndex}`;
 
 async function createAndJoin(page: Page, code: string, name: string, create: boolean) {
   await page.goto(`/room/${code}${create ? '?create=1' : ''}`);
@@ -102,7 +106,9 @@ test('fullscreen toggles locally for page and cinema stage', async ({ page }) =>
 });
 
 test('joining a missing room shows a clear error', async ({ page }) => {
-  await page.goto('/room/not-a-real-room');
+  // Must be a *valid-looking* code (≤10 chars) so the server answers
+  // not-found rather than the client rejecting the format outright.
+  await page.goto('/room/no-such-rm');
   await expect(page.getByRole('heading', { name: 'Ready to join?' })).toBeVisible();
   await page.getByLabel('Your name').fill('Nobody');
   await page.getByRole('button', { name: 'Join now' }).click();

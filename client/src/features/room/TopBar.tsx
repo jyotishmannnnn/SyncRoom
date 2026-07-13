@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Check,
   Copy,
@@ -26,6 +26,13 @@ export function TopBar({
   const room = useRoomStore((s) => s.room);
   const showStats = useSettings((s) => s.showStats);
   const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    },
+    [],
+  );
   if (!room) return null;
 
   const values = Object.values(stats);
@@ -46,7 +53,8 @@ export function TopBar({
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/room/${room.code}`);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopied(false), 1500);
     } catch {
       /* clipboard unavailable */
     }

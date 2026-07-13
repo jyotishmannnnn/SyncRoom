@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   Camera,
   CameraOff,
@@ -44,6 +44,19 @@ function Range({
   className?: string;
 }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
+  /* A commit MUST follow every scrub, otherwise the caller's scrub state
+     sticks and the timeline freezes on it. Interactions that change the value
+     mark the input dirty; commit fires on every way the interaction can end
+     (pointer up OR cancel — touch scrubs on tablets often end in cancel —,
+     any value-changing key: arrows, Home/End, PageUp/Down, and blur as the
+     final safety net) but only when dirty, so focus changes alone never emit
+     a spurious seek. */
+  const dirty = useRef(false);
+  const commit = (el: HTMLInputElement): void => {
+    if (!dirty.current) return;
+    dirty.current = false;
+    onCommit(Number(el.value));
+  };
   return (
     <input
       type="range"
@@ -55,11 +68,14 @@ function Range({
       step={0.05}
       value={Math.min(value, max || 1)}
       disabled={disabled}
-      onChange={(e) => onScrub?.(Number(e.target.value))}
-      onPointerUp={(e) => onCommit(Number((e.target as HTMLInputElement).value))}
-      onKeyUp={(e) => {
-        if (e.key.startsWith('Arrow')) onCommit(Number((e.target as HTMLInputElement).value));
+      onChange={(e) => {
+        dirty.current = true;
+        onScrub?.(Number(e.target.value));
       }}
+      onPointerUp={(e) => commit(e.target as HTMLInputElement)}
+      onPointerCancel={(e) => commit(e.target as HTMLInputElement)}
+      onKeyUp={(e) => commit(e.target as HTMLInputElement)}
+      onBlur={(e) => commit(e.target)}
     />
   );
 }

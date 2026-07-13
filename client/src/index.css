@@ -130,12 +130,27 @@ body {
   transform: scaleX(-1);
 }
 
-/* CSS fallback when the Fullscreen API is unavailable (e.g. iOS Safari). */
+/* CSS fallback when the Fullscreen API is unavailable (e.g. iPhone Safari).
+   100dvh tracks the dynamic viewport, so when the browser collapses its
+   toolbar the element grows with it instead of leaving a gap; the browser
+   chrome itself cannot be hidden from CSS — that is a platform limit. */
 .pseudo-fullscreen {
   position: fixed !important;
   inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
   z-index: 90 !important;
   border-radius: 0 !important;
+  background: black;
+}
+
+/* Native fullscreen: make sure the element really paints edge to edge, with
+   no rounded corners or letterbox tint from the page showing through. */
+:fullscreen {
+  border-radius: 0 !important;
+  background: black;
+}
+::backdrop {
   background: black;
 }
 

@@ -37,11 +37,33 @@ export function VideoTile({
   const showStats = useSettings((s) => s.showStats);
   const [pipActive, setPipActive] = useState(false);
 
+  /* Attach the stream and keep the element rendering it. Browsers can pause
+     a <video> playing a live MediaStream around fullscreen transitions (the
+     element is re-laid-out while the compositor switches surfaces) even
+     though every track stays live — the remote side keeps receiving frames
+     while this preview looks frozen. Re-asserting play() on pause events and
+     fullscreen flips fixes the rendering without ever touching the stream. */
   useEffect(() => {
     const el = videoRef.current;
-    if (el && el.srcObject !== stream) {
+    if (!el) return;
+    if (el.srcObject !== stream) {
       el.srcObject = stream;
     }
+    if (!stream) return;
+    const resume = (): void => {
+      if (el.isConnected && el.srcObject === stream && el.paused) {
+        void el.play().catch(() => {});
+      }
+    };
+    resume();
+    el.addEventListener('pause', resume);
+    document.addEventListener('fullscreenchange', resume);
+    document.addEventListener('webkitfullscreenchange', resume);
+    return () => {
+      el.removeEventListener('pause', resume);
+      document.removeEventListener('fullscreenchange', resume);
+      document.removeEventListener('webkitfullscreenchange', resume);
+    };
   }, [stream]);
 
   useEffect(() => {
