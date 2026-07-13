@@ -1,6 +1,5 @@
+import { CONTACT_EMAILS } from '@/components/Footer';
 import { LegalLayout, LegalSection } from './LegalLayout';
-
-const CONTACT_EMAIL = 'jyotishman@sentrixrobotics.com';
 
 export function TermsPage() {
   return (
@@ -43,8 +42,12 @@ export function TermsPage() {
         <p>
           These terms may be updated as the service evolves; the “last updated” date above always
           reflects the current version. Questions? Email{' '}
-          <a href={`mailto:${CONTACT_EMAIL}`} className="text-accent hover:underline">
-            {CONTACT_EMAIL}
+          <a href={`mailto:${CONTACT_EMAILS[0]}`} className="text-accent hover:underline">
+            {CONTACT_EMAILS[0]}
+          </a>{' '}
+          or{' '}
+          <a href={`mailto:${CONTACT_EMAILS[1]}`} className="text-accent hover:underline">
+            {CONTACT_EMAILS[1]}
           </a>
           .
         </p>

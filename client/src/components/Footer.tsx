@@ -6,7 +6,7 @@ const FOOTER_LINKS = [
   { label: 'Terms of Service', to: '/terms' },
 ] as const;
 
-const CONTACT_EMAIL = 'jyotishman@sentrixrobotics.com';
+export const CONTACT_EMAILS = ['jyotishman@havnn.in', 'aditi@havnn.in'] as const;
 
 /**
  * Site footer for the marketing/legal pages (the in-room UI keeps its own
@@ -41,14 +41,16 @@ export function Footer() {
                 </Link>
               </li>
             ))}
-            <li>
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                className="rounded text-sm text-ink-dim transition-colors hover:text-ink hover:underline"
-              >
-                Contact
-              </a>
-            </li>
+            {CONTACT_EMAILS.map((email) => (
+              <li key={email}>
+                <a
+                  href={`mailto:${email}`}
+                  className="rounded text-sm text-ink-dim transition-colors hover:text-ink hover:underline"
+                >
+                  {email}
+                </a>
+              </li>
+            ))}
           </ul>
         </nav>
       </div>
