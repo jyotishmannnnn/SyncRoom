@@ -6,6 +6,11 @@ const FOOTER_LINKS = [
   { label: 'Terms of Service', to: '/terms' },
 ] as const;
 
+export const CONTACT_EMAILS = [
+  'jyotishman@havnn.in',
+  'aditi@havnn.in',
+] as const;
+
 /**
  * Site footer for the marketing/legal pages (the in-room UI keeps its own
  * control bar). Semantic landmark, keyboard-navigable links with visible
