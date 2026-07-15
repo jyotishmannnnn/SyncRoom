@@ -6,8 +6,6 @@ const FOOTER_LINKS = [
   { label: 'Terms of Service', to: '/terms' },
 ] as const;
 
-export const CONTACT_EMAILS = ['jyotishman@havnn.in', 'aditi@havnn.in'] as const;
-
 /**
  * Site footer for the marketing/legal pages (the in-room UI keeps its own
  * control bar). Semantic landmark, keyboard-navigable links with visible
@@ -22,7 +20,9 @@ export function Footer() {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-onaccent">
               <Logo size={15} title="" />
             </span>
-            <span className="font-display text-lg font-semibold tracking-tight">Havnn</span>
+            <span className="font-display text-lg font-semibold tracking-tight">
+              Havnn
+            </span>
           </span>
           <p className="mt-3 text-sm leading-relaxed text-ink-dim">
             Watch YouTube and Google Drive videos together in perfect sync.
@@ -39,16 +39,6 @@ export function Footer() {
                 >
                   {link.label}
                 </Link>
-              </li>
-            ))}
-            {CONTACT_EMAILS.map((email) => (
-              <li key={email}>
-                <a
-                  href={`mailto:${email}`}
-                  className="rounded text-sm text-ink-dim transition-colors hover:text-ink hover:underline"
-                >
-                  {email}
-                </a>
               </li>
             ))}
           </ul>
