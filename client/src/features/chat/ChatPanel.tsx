@@ -205,7 +205,7 @@ export function ChatPanel() {
 
       <form
         onSubmit={(e) => void send(e)}
-        className="flex items-center gap-2 border-t border-line p-3"
+        className="flex items-center gap-2 border-t border-line p-3 min-w-0"
       >
         <button
           type="button"
@@ -236,7 +236,7 @@ export function ChatPanel() {
         </button>
         <input
           aria-label="Chat message"
-          className="h-10 flex-1 rounded-full border border-line bg-surface-raised px-4 text-sm placeholder:text-ink-faint focus:border-accent focus:outline-none"
+          className="h-10 min-w-0 flex-1 rounded-full border border-line bg-surface-raised px-4 text-sm placeholder:text-ink-faint focus:border-accent focus:outline-none"
           placeholder="Message everyone"
           value={text}
           maxLength={LIMITS.MAX_CHAT_LENGTH}
@@ -249,7 +249,7 @@ export function ChatPanel() {
           type="submit"
           aria-label="Send message"
           disabled={!text.trim() && !pendingFile}
-          className="cursor-pointer rounded-full bg-accent p-2.5 text-onaccent transition-all hover:bg-accent-hover active:scale-95 disabled:opacity-40"
+          className="shrink-0 cursor-pointer rounded-full bg-accent p-2.5 text-onaccent transition-all hover:bg-accent-hover active:scale-95 disabled:opacity-40"
         >
           <SendHorizonal size={18} />
         </button>
