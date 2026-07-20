@@ -36,7 +36,23 @@ export function VideoTile({
   const speakerId = useSettings((s) => s.speakerId);
   const showStats = useSettings((s) => s.showStats);
   const [pipActive, setPipActive] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(
+  document.fullscreenElement !== null
+);
 
+useEffect(() => {
+  const handleFullscreenChange = () => {
+    setIsFullscreen(document.fullscreenElement !== null);
+  };
+
+  document.addEventListener("fullscreenchange", handleFullscreenChange);
+  document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+
+  return () => {
+    document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+  };
+}, []);
   /* Attach the stream and keep the element rendering it. Browsers can pause
      a <video> playing a live MediaStream around fullscreen transitions (the
      element is re-laid-out while the compositor switches surfaces) even
@@ -160,7 +176,8 @@ export function VideoTile({
         </div>
       )}
 
-      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/70 to-transparent p-2.5">
+      {!isFullscreen && (
+<div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/70 to-transparent p-2.5">
         <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-white">
           {isHost && <Crown size={12} className="shrink-0 text-warning" aria-label="Host" />}
           <span className="truncate">
@@ -191,7 +208,9 @@ export function VideoTile({
             </button>
           )}
         </span>
-      </div>
+      </div> 
+    )}
     </div>
   );
+  
 }
