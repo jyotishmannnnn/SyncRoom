@@ -3,7 +3,6 @@ import type { RemoteFeed } from '@/features/call/usePeerConnections';
 import type { PeerStats } from '@/features/call/useCallStats';
 import { useRoomStore } from '@/store/room';
 import { useSettings } from '@/store/settings';
-import { useLocalPrefs } from '@/store/localPrefs';
 import { cn } from '@/lib/utils';
 import { VideoTile } from './VideoTile';
 
@@ -47,9 +46,8 @@ export function VideoGrid({
   // mirror from each participant's broadcast flag (so everyone sees your choice).
   // flipPreview is a session-local extra flip (XOR) that is never broadcast.
   const mirrorSelf = useSettings((s) => s.mirrorVideo);
-  const flipPreview = useLocalPrefs((s) => s.flipPreview);
   const mirroredFor = (t: Tile): boolean =>
-    t.isSelf ? mirrorSelf !== flipPreview : (t.participant?.mirrored ?? false);
+  t.isSelf ? mirrorSelf : (t.participant?.mirrored ?? false);
 
   const byId = new Map(participants.map((p) => [p.id, p]));
   const self = selfId ? byId.get(selfId) : undefined;
@@ -111,6 +109,7 @@ export function VideoGrid({
             key={t.key}
             stream={t.stream}
             name={t.participant?.name ?? 'Unknown'}
+            participantId={t.participant?.id}
             isSelf={t.isSelf}
             isHost={t.participant?.isHost}
             micOn={t.isSelf ? micOn : t.participant?.micOn}
@@ -143,6 +142,7 @@ export function VideoGrid({
               key={t.key}
               stream={t.stream}
               name={t.participant?.name ?? 'Unknown'}
+              participantId={t.participant?.id}
               isSelf={t.isSelf}
               isHost={t.participant?.isHost}
               micOn={t.isSelf ? micOn : t.participant?.micOn}
@@ -165,6 +165,7 @@ export function VideoGrid({
           key={t.key}
           stream={t.stream}
           name={t.participant?.name ?? 'Unknown'}
+          participantId={t.participant?.id}
           isSelf={t.isSelf}
           isHost={t.participant?.isHost}
           micOn={t.isSelf ? micOn : t.participant?.micOn}

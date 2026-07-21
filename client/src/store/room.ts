@@ -3,6 +3,7 @@ import type {
   ChatMessage,
   MediaItem,
   Participant,
+  RoomReaction,
   RoomSnapshot,
   SyncState,
 } from '@syncroom/shared';
@@ -41,6 +42,7 @@ interface RoomStore {
   panel: PanelKind;
   toasts: Toast[];
   unreadChat: number;
+  reactions: RoomReaction[];
 
   setJoined: (selfId: string, room: RoomSnapshot, chat: ChatMessage[]) => void;
   setRoom: (room: RoomSnapshot) => void;
@@ -57,6 +59,8 @@ interface RoomStore {
   dismissToast: (id: number) => void;
   setEnding: (reason: 'kicked' | 'ended') => void;
   reset: () => void;
+  showReaction: (reaction: RoomReaction) => void;
+  removeReaction: (reactionId: string) => void;
 }
 
 let toastId = 0;
@@ -76,6 +80,7 @@ const initial = {
   panel: null as PanelKind,
   toasts: [] as Toast[],
   unreadChat: 0,
+  reactions: [] as RoomReaction[],
 };
 
 export const useRoomStore = create<RoomStore>((set) => ({
@@ -142,7 +147,20 @@ export const useRoomStore = create<RoomStore>((set) => ({
     }),
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
-  setEnding: (reason) => set({ ending: reason }),
+    setEnding: (reason) => set({ ending: reason }),
+
+  showReaction: (reaction) =>
+    set((s) => ({
+      reactions: [...s.reactions, reaction],
+    })),
+
+  removeReaction: (reactionId) =>
+    set((s) => ({
+      reactions: s.reactions.filter(
+        (reaction) => reaction.id !== reactionId,
+      ),
+    })),
+
   reset: () => set({ ...initial }),
 }));
 

@@ -37,7 +37,13 @@ export function wireSocketToStore(): void {
   socket.on('chat:typing', (participantId, typing) =>
     store.getState().setTyping(participantId, typing),
   );
+  socket.on('reaction:show', (reaction) => {
+    store.getState().showReaction(reaction);
 
+    window.setTimeout(() => {
+      store.getState().removeReaction(reaction.id);
+    }, 2800);
+  });
   socket.on('room:kicked', () => store.getState().setEnding('kicked'));
   socket.on('room:ended', () => store.getState().setEnding('ended'));
   socket.on('room:force-muted', () => {

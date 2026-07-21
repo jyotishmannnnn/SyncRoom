@@ -4,6 +4,7 @@ import type {
   JoinRequest,
   JoinResult,
   MediaItem,
+  RoomReaction,
   RoomSnapshot,
   SignalPayload,
   SyncState,
@@ -28,6 +29,7 @@ export interface SyncRateCommand {
 /** Events the client emits to the server. */
 export interface ClientToServerEvents {
   'room:join': (req: JoinRequest, ack: (res: JoinResult) => void) => void;
+  'reaction:send': (emoji: string) => void;
   'room:leave': () => void;
   'room:lock': (locked: boolean) => void;
   'room:kick': (participantId: string) => void;
@@ -69,6 +71,7 @@ export interface ServerToClientEvents {
   'room:ended': () => void;
   'room:kicked': () => void;
   'room:force-muted': () => void;
+  'reaction:show': (reaction: RoomReaction) => void;
 
   signal: (payload: SignalPayload) => void;
 

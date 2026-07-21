@@ -17,6 +17,11 @@ export interface Participant {
   mirrored: boolean;
   joinedAt: number;
 }
+export interface RoomReaction {
+  id: string;
+  participantId: string;
+  emoji: string;
+}
 
 export type MediaKind =
   | 'youtube'

@@ -1,4 +1,5 @@
 import type { Server, Socket } from 'socket.io';
+import { randomUUID } from 'node:crypto';
 import type {
   ClientToServerEvents,
   JoinResult,
@@ -80,6 +81,32 @@ export function registerHandlers(
       }
       return false;
     };
+
+    const ALLOWED_REACTIONS = new Set([
+      '👍',
+      '❤️',
+      '😂',
+      '😮',
+      '👏',
+      '🎉',
+      '😢',
+      '😍',
+    ]);
+
+    socket.on('reaction:send', (emoji) => {
+      if (!guard('generic')) return;
+
+      const ctx = self();
+      if (!ctx) return;
+
+      if (!ALLOWED_REACTIONS.has(emoji)) return;
+
+      io.to(ctx.room.code).emit('reaction:show', {
+        id: randomUUID(),
+        participantId: ctx.id,
+        emoji,
+      });
+    });
 
     /** Extracts a bounded, string-typed eventId from a client command. */
     const eventIdOf = (cmd: unknown): string | undefined => {

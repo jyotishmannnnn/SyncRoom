@@ -4,7 +4,6 @@ import type { RemoteFeed } from '@/features/call/usePeerConnections';
 import type { PeerStats } from '@/features/call/useCallStats';
 import { useRoomStore } from '@/store/room';
 import { useSettings } from '@/store/settings';
-import { useLocalPrefs } from '@/store/localPrefs';
 import { cn } from '@/lib/utils';
 import { VideoTile } from './VideoTile';
 
@@ -28,7 +27,6 @@ export function FloatingThumbs({ localStream, screenStream, feeds, stats }: Floa
   // Same self-mirroring rule as VideoGrid: persistent setting XOR the
   // session-local flip. CSS-only, never affects the transmitted stream.
   const mirrorSelf = useSettings((s) => s.mirrorVideo);
-  const flipPreview = useLocalPrefs((s) => s.flipPreview);
 
   const boxRef = useRef<HTMLDivElement>(null);
   /** null = default anchor (top-right); set on first drag. */
@@ -89,12 +87,13 @@ export function FloatingThumbs({ localStream, screenStream, feeds, stats }: Floa
           <VideoTile
             stream={screenStream ?? localStream}
             name={self.name}
+            participantId={self.id}
             isSelf
             isHost={self.isHost}
             micOn={micOn}
             cameraOn={cameraOn}
             isScreen={screenStream !== null}
-            mirrored={mirrorSelf !== flipPreview}
+            mirrored={mirrorSelf}
             className="aspect-video w-40 shadow-2xl"
           />
         )}
@@ -105,6 +104,7 @@ export function FloatingThumbs({ localStream, screenStream, feeds, stats }: Floa
               key={f.stream.id}
               stream={f.stream}
               name={p.name}
+              participantId={p.id}
               isHost={p.isHost}
               micOn={p.micOn}
               cameraOn={p.cameraOn}
