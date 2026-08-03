@@ -101,7 +101,7 @@ export function FloatingThumbs({ localStream, screenStream, feeds, stats }: Floa
           const p = byId.get(f.peerId)!;
           return (
             <VideoTile
-              key={f.stream.id}
+              key={f.peerId}
               stream={f.stream}
               name={p.name}
               participantId={p.id}

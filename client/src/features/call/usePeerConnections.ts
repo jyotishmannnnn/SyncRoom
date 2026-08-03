@@ -134,6 +134,14 @@ export function usePeerConnections(options: {
             const slot = track.kind as 'audio' | 'video';
             const existing = senders[slot];
             if (!existing) {
+              console.log("[ADD TRACK]", {
+                source: kind, // camera or screen
+                trackKind: track.kind, // audio or video
+                trackId: track.id,
+                streamId: stream.id,
+                enabled: track.enabled,
+                readyState: track.readyState,
+              });
               const sender = pc.addTrack(track, stream);
               senders[slot] = sender;
               applySenderQuality(sender, kind);
@@ -156,7 +164,14 @@ export function usePeerConnections(options: {
           }
         }
       };
-
+      console.log(
+        "[LOCAL CAM]", 
+        cam?.getTracks().map(t => ({
+          kind: t.kind,
+          enabled: t.enabled,
+          readyState: t.readyState
+        }))
+      );
       syncSet(cam, peer.camSenders, 'camera');
       syncSet(screen, peer.screenSenders, 'screen');
     }
@@ -165,6 +180,13 @@ export function usePeerConnections(options: {
   const createPeer = useCallback(
     (peerId: string): PeerRecord => {
       const pc = new RTCPeerConnection({ iceServers: iceServers() });
+      pc.onsignalingstatechange = () => {
+        console.log("[SIGNAL STATE]", peerId, pc.signalingState);
+      };
+
+      pc.onconnectionstatechange = () => {
+        console.log("[CONNECTION STATE]", peerId, pc.connectionState);
+      };
       const peer: PeerRecord = {
         pc,
         polite: (selfId ?? '') < peerId,
@@ -176,10 +198,24 @@ export function usePeerConnections(options: {
       };
 
       pc.onnegotiationneeded = async (): Promise<void> => {
+        console.log("[NEGOTIATION]", {
+          peerId,
+          selfId,
+          signalingState: pc.signalingState,
+          iceConnectionState: pc.iceConnectionState,
+        });
+
         try {
           peer.makingOffer = true;
           await pc.setLocalDescription();
+
           if (pc.localDescription) {
+            console.log("[SIGNAL OUT]", {
+              type: pc.localDescription.type,
+              to: peerId,
+              from: selfId,
+            });
+
             socket.emit('signal', {
               to: peerId,
               from: selfId ?? '',
@@ -187,14 +223,15 @@ export function usePeerConnections(options: {
               streamMeta: streamMeta(),
             });
           }
-        } catch {
-          /* negotiation races resolve on the next attempt */
+        } catch (err) {
+          console.error("[NEGOTIATION ERROR]", err);
         } finally {
           peer.makingOffer = false;
         }
       };
 
       pc.onicecandidate = (ev): void => {
+        console.log("[ICE OUT]", ev.candidate);
         if (ev.candidate) {
           socket.emit('signal', {
             to: peerId,
@@ -205,12 +242,22 @@ export function usePeerConnections(options: {
       };
 
       pc.oniceconnectionstatechange = (): void => {
-        if (pc.iceConnectionState === 'failed') pc.restartIce();
+        console.log("[ICE STATE]", peerId, pc.iceConnectionState);
+
+        if (pc.iceConnectionState === "failed") {
+          console.log("[ICE RESTART]", peerId);
+          pc.restartIce();
+        }
+
       };
 
       pc.ontrack = (ev): void => {
-        const stream = ev.streams[0];
-        if (!stream) return;
+        console.log("[TRACK]", ev.track.kind, ev.streams);
+        let stream = ev.streams[0];
+
+        if (!stream) {
+          stream = new MediaStream([ev.track]);
+        }
         const kind = peer.remoteMeta[stream.id] ?? 'camera';
         setFeeds((prev) => {
           const without = prev.filter((f) => !(f.peerId === peerId && f.stream.id === stream.id));
@@ -232,6 +279,8 @@ export function usePeerConnections(options: {
     if (!active) return;
 
     const onSignal = async (payload: SignalPayload): Promise<void> => {
+      console.log("[SIGNAL IN]", payload);
+
       const peerId = payload.from;
       if (!peerId || peerId === selfId) return;
       let peer = peersRef.current.get(peerId);
@@ -263,6 +312,7 @@ export function usePeerConnections(options: {
           }
         } else if (payload.candidate) {
           try {
+            console.log("[ICE IN]", payload.candidate);
             await pc.addIceCandidate(payload.candidate as RTCIceCandidateInit);
           } catch (err) {
             if (!peer.ignoreOffer) throw err;

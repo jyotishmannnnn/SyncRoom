@@ -75,7 +75,7 @@ export function VideoGrid({
     const p = byId.get(feed.peerId);
     if (!p) continue; // participant already left; feed teardown is in flight
     tiles.push({
-      key: `${feed.peerId}-${feed.stream.id}`,
+      key: `${feed.peerId}-${feed.kind}`,
       stream: feed.stream,
       participant: p,
       isSelf: false,
@@ -86,7 +86,11 @@ export function VideoGrid({
   // Participants whose media hasn't arrived yet still get a presence tile.
   for (const p of participants) {
     if (p.id === selfId) continue;
-    if (!feeds.some((f) => f.peerId === p.id)) {
+    const hasCameraFeed = feeds.some(
+      f => f.peerId === p.id && f.kind === "camera"
+    );
+
+    if (!hasCameraFeed) {
       tiles.push({
         key: `${p.id}-pending`,
         stream: null,
