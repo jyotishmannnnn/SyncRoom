@@ -57,6 +57,12 @@ export function useLocalMedia(): LocalMedia {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     try {
       const media = await navigator.mediaDevices.getUserMedia(buildConstraints());
+      console.log("[LOCAL STREAM]", media.getTracks().map(t => ({
+        kind: t.kind,
+        enabled: t.enabled,
+        readyState: t.readyState
+      }))
+    );
       media.getVideoTracks().forEach((t) => (t.contentHint = 'motion'));
       streamRef.current = media;
       setStream(media);

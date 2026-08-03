@@ -83,12 +83,45 @@ export function VideoTile({
    */
   useEffect(() => {
     const el = videoRef.current;
+    if (!el) return;
+
+    const onLoaded = () => {
+      console.log("[VIDEO LOADED]", name, {
+        width: el.videoWidth,
+        height: el.videoHeight,
+      });
+    };
+
+    el.addEventListener("loadedmetadata", onLoaded);
+
+    return () => {
+      el.removeEventListener("loadedmetadata", onLoaded);
+    };
+  }, [name]);
+
+  useEffect(() => {
+    const el = videoRef.current;
 
     if (!el) return;
 
-    if (el.srcObject !== stream) {
-      el.srcObject = stream;
+    const current = el.srcObject as MediaStream | null;
+
+    if (
+        current !== stream ||
+        current?.getVideoTracks()[0]?.id !== stream?.getVideoTracks()[0]?.id
+    ) {
+        el.srcObject = stream;
     }
+
+    console.log("[VIDEO TILE]", {
+      name,
+      streamId: stream?.id,
+      tracks: stream?.getTracks().map(t => ({
+        kind: t.kind,
+        enabled: t.enabled,
+        readyState: t.readyState,
+      })),
+    });
 
     if (!stream) return;
 
