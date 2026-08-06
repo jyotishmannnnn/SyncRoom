@@ -3,6 +3,7 @@ import type { RemoteFeed } from '@/features/call/usePeerConnections';
 import type { PeerStats } from '@/features/call/useCallStats';
 import { useRoomStore } from '@/store/room';
 import { useSettings } from '@/store/settings';
+import { useLocalPrefs } from '@/store/localPrefs';
 import { cn } from '@/lib/utils';
 import { VideoTile } from './VideoTile';
 
@@ -46,8 +47,9 @@ export function VideoGrid({
   // mirror from each participant's broadcast flag (so everyone sees your choice).
   // flipPreview is a session-local extra flip (XOR) that is never broadcast.
   const mirrorSelf = useSettings((s) => s.mirrorVideo);
+  const flipPreview = useLocalPrefs((s) => s.flipPreview);
   const mirroredFor = (t: Tile): boolean =>
-  t.isSelf ? mirrorSelf : (t.participant?.mirrored ?? false);
+    t.isSelf ? mirrorSelf !== flipPreview : (t.participant?.mirrored ?? false);
 
   const byId = new Map(participants.map((p) => [p.id, p]));
   const self = selfId ? byId.get(selfId) : undefined;
@@ -75,7 +77,7 @@ export function VideoGrid({
     const p = byId.get(feed.peerId);
     if (!p) continue; // participant already left; feed teardown is in flight
     tiles.push({
-      key: `${feed.peerId}-${feed.kind}`,
+      key: `${feed.peerId}-${feed.stream.id}`,
       stream: feed.stream,
       participant: p,
       isSelf: false,
@@ -86,11 +88,7 @@ export function VideoGrid({
   // Participants whose media hasn't arrived yet still get a presence tile.
   for (const p of participants) {
     if (p.id === selfId) continue;
-    const hasCameraFeed = feeds.some(
-      f => f.peerId === p.id && f.kind === "camera"
-    );
-
-    if (!hasCameraFeed) {
+    if (!feeds.some((f) => f.peerId === p.id)) {
       tiles.push({
         key: `${p.id}-pending`,
         stream: null,
@@ -113,7 +111,6 @@ export function VideoGrid({
             key={t.key}
             stream={t.stream}
             name={t.participant?.name ?? 'Unknown'}
-            participantId={t.participant?.id}
             isSelf={t.isSelf}
             isHost={t.participant?.isHost}
             micOn={t.isSelf ? micOn : t.participant?.micOn}
@@ -146,7 +143,6 @@ export function VideoGrid({
               key={t.key}
               stream={t.stream}
               name={t.participant?.name ?? 'Unknown'}
-              participantId={t.participant?.id}
               isSelf={t.isSelf}
               isHost={t.participant?.isHost}
               micOn={t.isSelf ? micOn : t.participant?.micOn}
@@ -169,7 +165,6 @@ export function VideoGrid({
           key={t.key}
           stream={t.stream}
           name={t.participant?.name ?? 'Unknown'}
-          participantId={t.participant?.id}
           isSelf={t.isSelf}
           isHost={t.participant?.isHost}
           micOn={t.isSelf ? micOn : t.participant?.micOn}

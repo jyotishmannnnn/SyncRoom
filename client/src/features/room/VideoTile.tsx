@@ -3,7 +3,6 @@ import { Crown, MicOff, PictureInPicture2 } from 'lucide-react';
 import { cn, initials } from '@/lib/utils';
 import { useSettings } from '@/store/settings';
 import type { PeerStats } from '@/features/call/useCallStats';
-import { useRoomStore } from '@/store/room';
 
 export interface VideoTileProps {
   stream: MediaStream | null;
@@ -17,7 +16,6 @@ export interface VideoTileProps {
   mirrored?: boolean;
   stats?: PeerStats;
   className?: string;
-  participantId?: string;
 }
 
 const qualityColor = { good: 'bg-success', fair: 'bg-warning', poor: 'bg-danger' } as const;
@@ -33,36 +31,12 @@ export function VideoTile({
   mirrored = false,
   stats,
   className,
-  participantId,
 }: VideoTileProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const speakerId = useSettings((s) => s.speakerId);
   const showStats = useSettings((s) => s.showStats);
-  const allReactions = useRoomStore((state) => state.reactions);
-
-  const reactions = participantId
-    ? allReactions.filter(
-        (reaction) => reaction.participantId === participantId,
-    )
-    : [];
   const [pipActive, setPipActive] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(
-  document.fullscreenElement !== null
-);
 
-useEffect(() => {
-  const handleFullscreenChange = () => {
-    setIsFullscreen(document.fullscreenElement !== null);
-  };
-
-  document.addEventListener("fullscreenchange", handleFullscreenChange);
-  document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
-
-  return () => {
-    document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
-  };
-}, []);
   /* Attach the stream and keep the element rendering it. Browsers can pause
      a <video> playing a live MediaStream around fullscreen transitions (the
      element is re-laid-out while the compositor switches surfaces) even
@@ -158,21 +132,6 @@ useEffect(() => {
         className,
       )}
     >
-      {reactions.length > 0 && (
-  <div
-    className="pointer-events-none absolute inset-0 z-30 overflow-hidden"
-    aria-hidden="true"
-  >
-    {reactions.map((reaction) => (
-      <span
-        key={reaction.id}
-        className="absolute bottom-10 left-1/2 text-5xl drop-shadow-lg animate-reaction-float"
-      >
-        {reaction.emoji}
-      </span>
-    ))}
-  </div>
-)}
       <video
         ref={videoRef}
         autoPlay
@@ -201,8 +160,7 @@ useEffect(() => {
         </div>
       )}
 
-      {!isFullscreen && (
-<div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/70 to-transparent p-2.5">
+      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/70 to-transparent p-2.5">
         <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-white">
           {isHost && <Crown size={12} className="shrink-0 text-warning" aria-label="Host" />}
           <span className="truncate">
@@ -233,9 +191,7 @@ useEffect(() => {
             </button>
           )}
         </span>
-      </div> 
-    )}
+      </div>
     </div>
   );
-  
-}  
+}

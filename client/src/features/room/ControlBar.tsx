@@ -14,9 +14,8 @@ import {
 } from 'lucide-react';
 import { IconButton } from '@/components/ui/IconButton';
 import { useRoomStore } from '@/store/room';
-import { useSettings } from '@/store/settings';
+import { useLocalPrefs } from '@/store/localPrefs';
 import { cn } from '@/lib/utils';
-import { ReactionPicker } from './ReactionPicker';
 
 export interface ControlBarProps {
   onToggleMic: () => void;
@@ -38,8 +37,8 @@ export function ControlBar({
   const micOn = useRoomStore((s) => s.micOn);
   const cameraOn = useRoomStore((s) => s.cameraOn);
   const sharing = useRoomStore((s) => s.sharing);
-  const mirrorVideo = useSettings((s) => s.mirrorVideo);
-const updateSettings = useSettings((s) => s.update);
+  const flipPreview = useLocalPrefs((s) => s.flipPreview);
+  const toggleFlipPreview = useLocalPrefs((s) => s.toggleFlipPreview);
   const panel = useRoomStore((s) => s.panel);
   const setPanel = useRoomStore((s) => s.setPanel);
   const unread = useRoomStore((s) => s.unreadChat);
@@ -64,15 +63,12 @@ const updateSettings = useSettings((s) => s.update);
         {cameraOn ? <Camera size={19} /> : <CameraOff size={19} />}
       </IconButton>
       <IconButton
-        label={mirrorVideo ? 'Unflip camera for everyone' : 'Flip camera for everyone'}
-        active={mirrorVideo}
-        onClick={() => updateSettings({ mirrorVideo: !mirrorVideo })}
+        label={flipPreview ? 'Unflip camera preview' : 'Flip camera preview'}
+        active={flipPreview}
+        onClick={toggleFlipPreview}
       >
         <FlipHorizontal2 size={19} />
       </IconButton>
-
-      <ReactionPicker />
-
       <IconButton
         label={sharing ? 'Stop sharing screen (S)' : 'Share screen (S)'}
         active={sharing}
