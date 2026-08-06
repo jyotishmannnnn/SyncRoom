@@ -13,6 +13,7 @@ import {
   Play,
   Rewind,
   FastForward,
+  Settings,
   Users,
   Volume2,
   VolumeX,
@@ -24,6 +25,101 @@ import { useLocalPrefs } from '@/store/localPrefs';
 import { SEEK_STEP_S, seekBy, toggleCamera, toggleMic } from '@/features/room/mediaActions';
 import { cn, formatDuration } from '@/lib/utils';
 import type { LocalPlayerFacade } from './useSyncEngine';
+import type { DriveQualityInfo } from './SyncController';
+
+/** Google's Drive preview renditions, best first. 480p doesn't exist upstream
+ * (Google's preview endpoint only ever offers these three), so the menu is
+ * Auto/1080p/720p/360p, never a fabricated 4th tier. */
+const ITAG_LABEL: Record<string, string> = { '37': '1080p', '22': '720p', '18': '360p' };
+const ITAG_ORDER = ['37', '22', '18'];
+
+/**
+ * Quality picker, only rendered when the current Drive file actually has
+ * more than one Google-served rendition (source='stream'; a direct
+ * download has exactly one, the original upload, nothing to switch). Purely
+ * local: see SyncController.setDriveQuality, never emits a sync event, so
+ * everyone else's playback is untouched.
+ */
+function QualityMenu({
+  info,
+  onSelect,
+}: {
+  info: DriveQualityInfo;
+  onSelect: (itag: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onOutside = (e: MouseEvent): void => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [open]);
+
+  const options = ITAG_ORDER.filter((itag) => info.available.includes(itag));
+  const currentLabel = info.current ? ITAG_LABEL[info.current] ?? info.current : 'Auto';
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        aria-label={`Quality: ${currentLabel}`}
+        title="Quality"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          'flex cursor-pointer items-center gap-1 rounded-full px-2.5 py-2 text-xs font-medium text-white transition-colors hover:bg-white/15',
+          open && 'bg-white/20',
+        )}
+      >
+        <Settings size={16} />
+        <span className="hidden sm:inline">{currentLabel}</span>
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute bottom-full right-0 mb-2 min-w-28 overflow-hidden rounded-xl bg-black/90 py-1 text-sm text-white shadow-2xl backdrop-blur"
+        >
+          <button
+            type="button"
+            role="menuitemradio"
+            aria-checked={info.current === null}
+            onClick={() => {
+              onSelect(null);
+              setOpen(false);
+            }}
+            className={cn(
+              'block w-full cursor-pointer px-4 py-1.5 text-left hover:bg-white/10',
+              info.current === null && 'font-semibold text-accent',
+            )}
+          >
+            Auto
+          </button>
+          {options.map((itag) => (
+            <button
+              key={itag}
+              type="button"
+              role="menuitemradio"
+              aria-checked={info.current === itag}
+              onClick={() => {
+                onSelect(itag);
+                setOpen(false);
+              }}
+              className={cn(
+                'block w-full cursor-pointer px-4 py-1.5 text-left hover:bg-white/10',
+                info.current === itag && 'font-semibold text-accent',
+              )}
+            >
+              {ITAG_LABEL[itag]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** Range input with a filled track (via the --fill custom property). */
 function Range({
@@ -82,6 +178,8 @@ function Range({
 
 export interface CinemaBarProps {
   player: LocalPlayerFacade;
+  /** null when the current media has no quality options to pick between. */
+  driveQuality: DriveQualityInfo | null;
   visible: boolean;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
@@ -97,6 +195,7 @@ export interface CinemaBarProps {
  */
 export function CinemaBar({
   player,
+  driveQuality,
   visible,
   isFullscreen,
   onToggleFullscreen,
@@ -256,6 +355,10 @@ export function CinemaBar({
           />
 
           <span className="flex-1" />
+
+          {driveQuality && driveQuality.source === 'stream' && driveQuality.available.length > 1 && (
+            <QualityMenu info={driveQuality} onSelect={(itag) => player.setDriveQuality(itag)} />
+          )}
 
           {isFullscreen && (
             <>

@@ -55,7 +55,7 @@ export function PlayerStage({
   const setPanel = useRoomStore((s) => s.setPanel);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const { driveFallback, playerReady, autoplayBlocked, resume, player } =
+  const { driveFallback, playerReady, autoplayBlocked, resume, player, driveQuality } =
     useSyncEngine(containerRef);
 
   /* ---------------- inactivity: fade controls, hide cursor ---------------- */
@@ -211,6 +211,7 @@ export function PlayerStage({
       {!driveFallback && (
         <CinemaBar
           player={player}
+          driveQuality={driveQuality}
           visible={barVisible}
           isFullscreen={isFullscreen}
           onToggleFullscreen={onToggleFullscreen}

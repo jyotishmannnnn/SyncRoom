@@ -21,6 +21,12 @@ interface PeerRecord {
   screenSenders: Partial<Record<'audio' | 'video', RTCRtpSender>>;
 }
 
+/** Verbose signaling/ICE tracing, dev-only: SDP and candidates are sensitive
+ * enough (and noisy enough) that they should never hit a production console. */
+function debug(...args: unknown[]): void {
+  if (import.meta.env.DEV) console.log(...args);
+}
+
 /**
  * ICE configuration, tuned to keep media direct (P2P) and only relay when a
  * direct path is impossible.
@@ -33,6 +39,8 @@ interface PeerRecord {
  * which would force every call through TURN and defeat the point of P2P.
  * VITE_TURN_URL may list several URLs (comma-separated), e.g. UDP + TCP/443.
  */
+let turnWarningLogged = false;
+
 function iceServers(): RTCIceServer[] {
   const servers: RTCIceServer[] = [
     { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
@@ -50,6 +58,15 @@ function iceServers(): RTCIceServer[] {
         credential: (import.meta.env.VITE_TURN_CREDENTIAL as string | undefined) ?? '',
       });
     }
+  } else if (!turnWarningLogged) {
+    // Without a TURN relay, ~10-15% of pairs (symmetric NAT, strict corporate
+    // firewalls, some CGNAT) can never form a direct or srflx path and calls
+    // will silently never connect. Surface it once instead of failing silently.
+    turnWarningLogged = true;
+    console.warn(
+      '[webrtc] VITE_TURN_URL is not set — calls between peers behind strict/symmetric ' +
+        'NATs will fail to connect. See docs/DEPLOYMENT.md#turn-recommended-for-production.',
+    );
   }
   return servers;
 }
@@ -134,7 +151,7 @@ export function usePeerConnections(options: {
             const slot = track.kind as 'audio' | 'video';
             const existing = senders[slot];
             if (!existing) {
-              console.log("[ADD TRACK]", {
+              debug("[ADD TRACK]", {
                 source: kind, // camera or screen
                 trackKind: track.kind, // audio or video
                 trackId: track.id,
@@ -164,8 +181,8 @@ export function usePeerConnections(options: {
           }
         }
       };
-      console.log(
-        "[LOCAL CAM]", 
+      debug(
+        "[LOCAL CAM]",
         cam?.getTracks().map(t => ({
           kind: t.kind,
           enabled: t.enabled,
@@ -181,12 +198,16 @@ export function usePeerConnections(options: {
     (peerId: string): PeerRecord => {
       const pc = new RTCPeerConnection({ iceServers: iceServers() });
       pc.onsignalingstatechange = () => {
-        console.log("[SIGNAL STATE]", peerId, pc.signalingState);
+        debug("[SIGNAL STATE]", peerId, pc.signalingState);
       };
 
       pc.onconnectionstatechange = () => {
-        console.log("[CONNECTION STATE]", peerId, pc.connectionState);
+        debug("[CONNECTION STATE]", peerId, pc.connectionState);
       };
+      // A peer whose connection never recovers (network drop, `disconnected`
+      // that never resolves to `failed`) would otherwise show a permanently
+      // frozen/black tile with no way back short of leaving the room.
+      let disconnectTimer: ReturnType<typeof setTimeout> | undefined;
       const peer: PeerRecord = {
         pc,
         polite: (selfId ?? '') < peerId,
@@ -198,7 +219,7 @@ export function usePeerConnections(options: {
       };
 
       pc.onnegotiationneeded = async (): Promise<void> => {
-        console.log("[NEGOTIATION]", {
+        debug("[NEGOTIATION]", {
           peerId,
           selfId,
           signalingState: pc.signalingState,
@@ -210,7 +231,7 @@ export function usePeerConnections(options: {
           await pc.setLocalDescription();
 
           if (pc.localDescription) {
-            console.log("[SIGNAL OUT]", {
+            debug("[SIGNAL OUT]", {
               type: pc.localDescription.type,
               to: peerId,
               from: selfId,
@@ -231,7 +252,7 @@ export function usePeerConnections(options: {
       };
 
       pc.onicecandidate = (ev): void => {
-        console.log("[ICE OUT]", ev.candidate);
+        debug("[ICE OUT]", ev.candidate);
         if (ev.candidate) {
           socket.emit('signal', {
             to: peerId,
@@ -242,17 +263,41 @@ export function usePeerConnections(options: {
       };
 
       pc.oniceconnectionstatechange = (): void => {
-        console.log("[ICE STATE]", peerId, pc.iceConnectionState);
+        debug("[ICE STATE]", peerId, pc.iceConnectionState);
+        const state = pc.iceConnectionState;
 
-        if (pc.iceConnectionState === "failed") {
-          console.log("[ICE RESTART]", peerId);
+        if (state === 'failed') {
+          if (disconnectTimer) {
+            clearTimeout(disconnectTimer);
+            disconnectTimer = undefined;
+          }
+          debug("[ICE RESTART]", peerId);
           pc.restartIce();
+        } else if (state === 'disconnected') {
+          // `disconnected` is often transient (brief packet loss, a network
+          // handoff) and self-heals within a couple seconds; some browsers
+          // also never promote a stuck `disconnected` to `failed`, so without
+          // this timer a dropped connection can stay black forever. Give it a
+          // grace window, then force a restart if it hasn't recovered.
+          if (!disconnectTimer) {
+            disconnectTimer = setTimeout(() => {
+              disconnectTimer = undefined;
+              if (pc.iceConnectionState === 'disconnected') {
+                debug("[ICE RESTART after disconnect]", peerId);
+                pc.restartIce();
+              }
+            }, 3000);
+          }
+        } else {
+          if (disconnectTimer) {
+            clearTimeout(disconnectTimer);
+            disconnectTimer = undefined;
+          }
         }
-
       };
 
       pc.ontrack = (ev): void => {
-        console.log("[TRACK]", ev.track.kind, ev.streams);
+        debug("[TRACK]", ev.track.kind, ev.streams);
         let stream = ev.streams[0];
 
         if (!stream) {
@@ -279,7 +324,7 @@ export function usePeerConnections(options: {
     if (!active) return;
 
     const onSignal = async (payload: SignalPayload): Promise<void> => {
-      console.log("[SIGNAL IN]", payload);
+      debug("[SIGNAL IN]", payload);
 
       const peerId = payload.from;
       if (!peerId || peerId === selfId) return;
@@ -312,7 +357,7 @@ export function usePeerConnections(options: {
           }
         } else if (payload.candidate) {
           try {
-            console.log("[ICE IN]", payload.candidate);
+            debug("[ICE IN]", payload.candidate);
             await pc.addIceCandidate(payload.candidate as RTCIceCandidateInit);
           } catch (err) {
             if (!peer.ignoreOffer) throw err;

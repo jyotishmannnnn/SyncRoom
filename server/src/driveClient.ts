@@ -66,6 +66,14 @@ export interface DriveMedia {
   filename: string | null;
   /** MIME of the bytes actually being served (NOT of the original filename). */
   mime: string | null;
+  /**
+   * Only set for source='stream': the itag actually being served, and every
+   * itag Google's preview endpoint offered for this file (unordered subset of
+   * '37'|'22'|'18' = 1080p|720p|360p). 'download' has exactly one rendition,
+   * the original upload, so there is nothing to pick between.
+   */
+  itag?: string;
+  availableItags?: string[];
 }
 
 /* ------------------------------- helpers ------------------------------- */
@@ -210,7 +218,8 @@ export function classifyDrivePage(html: string, finalUrl: string): DrivePage {
 /* ------------------------------ stream cache ------------------------------ */
 
 interface CachedStream {
-  url: string;
+  /** itag → signed googlevideo URL, every rendition Google offered this file. */
+  streams: Map<string, string>;
   cookie: string | null;
   filename: string | null;
   expiresAt: number;
@@ -266,12 +275,21 @@ function downloadMedia(res: globalThis.Response): DriveMedia {
   return { response: res, source: 'download', filename, mime };
 }
 
+/** Picks which itag to serve: the caller's explicit choice if Google actually
+ * offered it for this file, otherwise the best available by ITAG_PREFERENCE. */
+function pickItag(streams: Map<string, string>, preferredItag?: string): string | undefined {
+  if (preferredItag && streams.has(preferredItag)) return preferredItag;
+  return ITAG_PREFERENCE.find((itag) => streams.has(itag));
+}
+
 /**
  * STREAM state: resolve and open Google's preview-player rendition of the
  * file. `get_video_info` answers `status=ok` with an itag|url map (and sets
  * the DRIVE_STREAM cookie the googlevideo host requires) even when the
  * download endpoint is quota-blocked, or `status=fail` with a reason we can
- * surface precisely.
+ * surface precisely. The full itag→url map is cached (not just the chosen
+ * one) so a client-driven quality switch reuses it instead of spending
+ * another `get_video_info` call against the same per-file quota.
  */
 async function openStream(
   id: string,
@@ -279,17 +297,29 @@ async function openStream(
   range: string | undefined,
   signal: AbortSignal,
   why: string,
+  preferredItag?: string,
 ): Promise<DriveMedia> {
   console.log(`[drive] ${id}: state=STREAM → resolving preview stream (${why})`);
   const cached = streamCache.get(id);
   if (cached && cached.expiresAt > Date.now()) {
-    const res = await streamFetch(id, cached.url, cached.cookie, range, signal);
-    if (res) {
-      console.log(`[drive] ${id}: state=STREAM ✓ cached URL still valid (status=${res.status})`);
-      return { response: res, source: 'stream', filename: cached.filename, mime: 'video/mp4' };
+    const itag = pickItag(cached.streams, preferredItag);
+    const url = itag && cached.streams.get(itag);
+    if (url) {
+      const res = await streamFetch(id, url, cached.cookie, range, signal);
+      if (res) {
+        console.log(`[drive] ${id}: state=STREAM ✓ cached URL still valid (itag ${itag}, status=${res.status})`);
+        return {
+          response: res,
+          source: 'stream',
+          filename: cached.filename,
+          mime: 'video/mp4',
+          itag,
+          availableItags: [...cached.streams.keys()],
+        };
+      }
     }
     console.log(`[drive] ${id}: state=STREAM cached URL went stale, re-resolving`);
-    streamCache.delete(id); // signed URL went stale; resolve fresh below
+    streamCache.delete(id); // signed URLs went stale; resolve fresh below
   }
 
   const infoRes = await get(`${VIDEO_INFO}?docid=${encodeURIComponent(id)}`, jar, undefined, signal);
@@ -315,14 +345,14 @@ async function openStream(
     const sep = entry.indexOf('|');
     if (sep > 0) streams.set(entry.slice(0, sep), entry.slice(sep + 1));
   }
-  const url = ITAG_PREFERENCE.map((itag) => streams.get(itag)).find(Boolean);
+  const chosen = pickItag(streams, preferredItag);
+  const url = chosen && streams.get(chosen);
   if (!url) {
     console.warn(
       `[drive] ${id}: state=STREAM ✗ status=ok but no playable itags (got: ${[...streams.keys()].join(',') || 'none'})`,
     );
     throw new DriveError('upstream', 'get_video_info returned ok but no playable streams');
   }
-  const chosen = [...streams.entries()].find(([, u]) => u === url)?.[0];
   console.log(
     `[drive] ${id}: state=STREAM get_video_info ok (itags ${[...streams.keys()].join(',')}), fetching itag ${chosen}`,
   );
@@ -337,8 +367,15 @@ async function openStream(
     );
   }
   console.log(`[drive] ${id}: state=STREAM ✓ serving preview stream (itag ${chosen}) — ${why}`);
-  cacheStream(id, { url, cookie, filename, expiresAt: Date.now() + STREAM_CACHE_TTL_MS });
-  return { response: res, source: 'stream', filename, mime: 'video/mp4' };
+  cacheStream(id, { streams, cookie, filename, expiresAt: Date.now() + STREAM_CACHE_TTL_MS });
+  return {
+    response: res,
+    source: 'stream',
+    filename,
+    mime: 'video/mp4',
+    itag: chosen,
+    availableItags: [...streams.keys()],
+  };
 }
 
 /** Fetch a googlevideo stream URL; null when it doesn't answer with media. */
@@ -379,12 +416,13 @@ export async function openDriveMedia(
   id: string,
   range: string | undefined,
   signal: AbortSignal,
+  preferredItag?: string,
 ): Promise<DriveMedia> {
   const jar = new CookieJar();
 
   // A previous request already established that only the stream works; skip
   // straight to it instead of bouncing off the quota page on every seek.
-  if (streamCache.has(id)) return openStream(id, jar, range, signal, 'cached resolution');
+  if (streamCache.has(id)) return openStream(id, jar, range, signal, 'cached resolution', preferredItag);
 
   // DIRECT
   console.log(`[drive] ${id}: state=DIRECT → GET download endpoint${range ? ` (range ${range})` : ''}`);
@@ -431,14 +469,14 @@ export async function openDriveMedia(
       }
       case 'quota':
         console.warn(`[drive] ${id}: download quota exceeded, trying preview stream`);
-        return openStream(id, jar, range, signal, 'download quota exceeded');
+        return openStream(id, jar, range, signal, 'download quota exceeded', preferredItag);
       case 'sign-in':
         throw new DriveError('not-public', 'Drive asked for sign-in (file is not public)');
       case 'unknown':
         console.warn(
           `[drive] ${id}: unrecognized interstitial (title="${page.title}"), trying preview stream`,
         );
-        return openStream(id, jar, range, signal, `unrecognized page "${page.title}"`);
+        return openStream(id, jar, range, signal, `unrecognized page "${page.title}"`, preferredItag);
     }
   }
   throw new DriveError('upstream', 'download flow did not converge');
@@ -458,6 +496,7 @@ export function openDrivePreviewStream(
   range: string | undefined,
   signal: AbortSignal,
   why: string,
+  preferredItag?: string,
 ): Promise<DriveMedia> {
-  return openStream(id, new CookieJar(), range, signal, why);
+  return openStream(id, new CookieJar(), range, signal, why, preferredItag);
 }

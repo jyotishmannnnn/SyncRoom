@@ -49,4 +49,12 @@ export interface PlayerAdapter {
   isReady(): boolean;
   onEvent(cb: (ev: PlayerEvent) => void): void;
   destroy(): void;
+  /**
+   * Swaps the media source in place, preserving playhead position and
+   * play/pause state, without emitting any PlayerEvent for the swap itself
+   * (so it never triggers a sync broadcast, it's a purely local rendering
+   * choice). Only implemented by adapters that can actually offer alternate
+   * renditions of the same content (currently: Html5Adapter for Drive).
+   */
+  setSource?(url: string): Promise<void>;
 }

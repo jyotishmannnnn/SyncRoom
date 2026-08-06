@@ -22,6 +22,11 @@ export class Html5Adapter implements PlayerAdapter {
   private dash: DashInstance | null = null;
   private ready = false;
   private cb: ((ev: PlayerEvent) => void) | null = null;
+  /** True while swapping `src` for a quality change: native play/pause/seeked
+   * events fire during the swap and must NOT reach the controller, otherwise
+   * a purely local rendition switch would broadcast a sync:seek/play to the
+   * whole room. */
+  private suppressEvents = false;
 
   async load(item: MediaItem, container: HTMLElement, controls: boolean): Promise<void> {
     const video = document.createElement('video');
@@ -47,13 +52,18 @@ export class Html5Adapter implements PlayerAdapter {
     // to the unsynced iframe before its metadata is ready.
     video.addEventListener('progress', () => this.cb?.({ type: 'loadprogress' }));
     video.addEventListener('loadeddata', () => this.cb?.({ type: 'loadprogress' }));
-    video.addEventListener('play', () => this.cb?.({ type: 'play', time: video.currentTime }));
+    video.addEventListener('play', () => {
+      if (!this.suppressEvents) this.cb?.({ type: 'play', time: video.currentTime });
+    });
     video.addEventListener('pause', () => {
-      if (!video.ended) this.cb?.({ type: 'pause', time: video.currentTime });
+      if (!this.suppressEvents && !video.ended) this.cb?.({ type: 'pause', time: video.currentTime });
     });
     // Echo filtering happens in the SyncController's intent ledger, not here,
-    // adapters report everything, uniformly across providers.
-    video.addEventListener('seeked', () => this.cb?.({ type: 'seek', time: video.currentTime }));
+    // adapters report everything, uniformly across providers (except a
+    // quality-swap's own synthetic play/pause/seek, suppressed above/below).
+    video.addEventListener('seeked', () => {
+      if (!this.suppressEvents) this.cb?.({ type: 'seek', time: video.currentTime });
+    });
     video.addEventListener('ratechange', () =>
       this.cb?.({ type: 'rate', rate: video.playbackRate }),
     );
@@ -144,6 +154,40 @@ export class Html5Adapter implements PlayerAdapter {
     }
   }
 
+  /**
+   * Swaps `video.src` (Drive quality change), restoring the exact playhead
+   * and play/pause state it had a moment ago. Emits nothing: this is a
+   * per-viewer rendering choice, never a sync event, so it can never
+   * desync anyone else in the room.
+   */
+  async setSource(url: string): Promise<void> {
+    const video = this.video;
+    if (!video) return;
+    const time = video.currentTime;
+    const wasPlaying = !video.paused && !video.ended;
+    this.suppressEvents = true;
+    try {
+      video.src = url;
+      await new Promise<void>((resolve) => {
+        const onLoaded = (): void => {
+          video.removeEventListener('loadedmetadata', onLoaded);
+          resolve();
+        };
+        video.addEventListener('loadedmetadata', onLoaded);
+      });
+      video.currentTime = time;
+      if (wasPlaying) {
+        await video.play().catch(() => {
+          /* autoplay policy may re-block a fresh <video> element; the normal
+             drift/autoplay-blocked path in SyncController recovers this on
+             the next reconcile, same as any other stall. */
+        });
+      }
+    } finally {
+      this.suppressEvents = false;
+    }
+  }
+
   play(): void {
     void this.video?.play().catch((err: unknown) => {
       // NotAllowedError = autoplay policy; anything else is a real failure.
@@ -221,5 +265,6 @@ export class Html5Adapter implements PlayerAdapter {
     this.video = null;
     this.ready = false;
     this.cb = null;
+    this.suppressEvents = false;
   }
 }

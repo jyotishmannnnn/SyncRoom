@@ -19,6 +19,18 @@ export type ControllerPhase = 'loading' | 'ready' | 'error';
 /** Why a Drive file dropped to the unsynced preview iframe. */
 export type DriveFallbackReason = 'timeout' | 'unsupported' | 'network' | 'unknown';
 
+/**
+ * What quality options actually exist for the Drive file currently loaded.
+ * 'download' = the original upload, exactly one rendition, nothing to pick.
+ * 'stream' = Google's preview transcode; `available` lists whichever of
+ * itags 37/22/18 (1080p/720p/360p) Google actually offers for this file.
+ */
+export interface DriveQualityInfo {
+  source: 'download' | 'stream';
+  current: string | null;
+  available: string[];
+}
+
 export interface SyncControllerOptions {
   container: HTMLElement;
   /** Live permission checks, read at event time, never captured. */
@@ -35,6 +47,10 @@ export interface SyncControllerOptions {
   onAutoplayBlocked: () => void;
   /** Fired once when a Drive file starts server-side transcoding (slow start). */
   onTranscodeStart?: () => void;
+  /** Fired whenever quality selectability changes: on load, on a real switch,
+   * and with `null` when the current provider offers nothing to pick between
+   * (non-Drive media, the unsynced embed, or the HLS transcode fallback). */
+  onDriveQuality?: (info: DriveQualityInfo | null) => void;
   /** Test seam: overrides the provider registry. */
   adapterFactory?: (media: MediaItem) => PlayerAdapter;
 }
@@ -135,6 +151,10 @@ export class SyncController {
   private triedTranscode = false;
   /** Native-controls flag captured at load, replayed onto swapped-in adapters. */
   private controls = false;
+  private driveQuality: DriveQualityInfo | null = null;
+  /** Guards against a stale probe/switch resolving after a newer one started
+   * (rapid quality clicks, or a fresh media.load() superseding this one). */
+  private driveGen = 0;
 
   constructor(opts: SyncControllerOptions) {
     this.opts = opts;
@@ -147,6 +167,7 @@ export class SyncController {
   async load(media: MediaItem, controls: boolean): Promise<void> {
     this.media = media;
     this.controls = controls;
+    this.driveGen += 1;
     this.opts.onPhase('loading');
     useSyncDebug.getState().set({ provider: media.kind, phase: 'loading' });
 
@@ -157,7 +178,12 @@ export class SyncController {
     // Drive direct streams sometimes hang without ever erroring (interstitial
     // page, quota); a stall-watchdog degrades to the preview iframe if no bytes
     // arrive, but progress events keep re-arming it so a slow load survives.
-    if (media.kind === 'drive') this.armDriveWatchdog();
+    if (media.kind === 'drive') {
+      this.armDriveWatchdog();
+      void this.probeDriveQuality(media.url);
+    } else {
+      this.setDriveQualityInfo(null);
+    }
 
     try {
       await adapter.load(media, this.opts.container, controls);
@@ -186,6 +212,8 @@ export class SyncController {
     this.fellBack = true;
     this.clearLoadTimeout();
     this.adapter?.destroy();
+    this.driveGen += 1; // invalidate any in-flight probe from the old adapter
+    this.setDriveQualityInfo(null); // Drive's own iframe offers no quality control
 
     const embed = new DriveEmbedAdapter();
     this.adapter = embed;
@@ -206,6 +234,8 @@ export class SyncController {
     if (this.disposed || this.fellBack || this.triedTranscode || !this.media?.providerId) return;
     this.triedTranscode = true;
     this.adapter?.destroy();
+    this.driveGen += 1; // invalidate any in-flight probe from the old adapter
+    this.setDriveQualityInfo(null); // the HLS transcode is a single fixed-quality encode
 
     const transcoded = new Html5Adapter();
     this.adapter = transcoded;
@@ -250,6 +280,64 @@ export class SyncController {
   /** Hide/show the provider's own chrome while the cinema bar is active. */
   setNativeControls(visible: boolean): void {
     this.adapter?.setNativeControls(visible);
+  }
+
+  getDriveQuality(): DriveQualityInfo | null {
+    return this.driveQuality;
+  }
+
+  private setDriveQualityInfo(info: DriveQualityInfo | null): void {
+    this.driveQuality = info;
+    this.opts.onDriveQuality?.(info);
+  }
+
+  /**
+   * Discovers what quality options exist for the Drive file currently open,
+   * via the `X-Drive-*` headers `/drive/:id` sets (see driveProxy.ts). A
+   * tiny 1-byte range request, it never competes with the real playback
+   * request and, for the common case where Google's per-file signed-URL
+   * resolution is already cached server-side, costs no extra Drive quota.
+   */
+  private async probeDriveQuality(url: string): Promise<void> {
+    const gen = this.driveGen;
+    try {
+      const res = await fetch(url, { headers: { Range: 'bytes=0-0' } });
+      if (this.disposed || this.driveGen !== gen) return;
+      const source = res.headers.get('x-drive-source');
+      if (source !== 'download' && source !== 'stream') {
+        this.setDriveQualityInfo(null);
+        return;
+      }
+      const available = (res.headers.get('x-drive-available-itags') ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      this.setDriveQualityInfo({ source, current: res.headers.get('x-drive-itag'), available });
+    } catch {
+      if (!this.disposed && this.driveGen === gen) this.setDriveQualityInfo(null);
+    }
+  }
+
+  /**
+   * User-driven quality switch. Local only: seeks/resumes the same adapter
+   * in place (see Html5Adapter.setSource) and never touches the sync
+   * pipeline, so every other participant's playback is unaffected.
+   */
+  async setDriveQuality(itag: string | null): Promise<void> {
+    const adapter = this.adapter;
+    const media = this.media;
+    if (!media || media.kind !== 'drive' || !adapter?.setSource) return;
+    this.driveGen += 1;
+    const target = new URL(media.url, window.location.origin);
+    if (itag) target.searchParams.set('itag', itag);
+    else target.searchParams.delete('itag');
+    // Keep it relative like the original (driveDirectUrl is intentionally
+    // origin-agnostic; see mediaUrl.ts).
+    const relative = media.url.startsWith('http')
+      ? target.toString()
+      : `${target.pathname}${target.search}`;
+    await adapter.setSource(relative);
+    void this.probeDriveQuality(relative);
   }
 
   /** User clicked the "click to play" overlay, a gesture is now available. */
