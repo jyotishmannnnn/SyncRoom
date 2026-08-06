@@ -5,6 +5,7 @@ import {
   SyncController,
   type ControllerPhase,
   type DriveFallbackReason,
+  type DriveQualityInfo,
 } from './SyncController';
 
 /** User-facing explanation for each Drive fallback cause. */
@@ -41,6 +42,8 @@ export interface LocalPlayerFacade {
   setMuted: (muted: boolean) => void;
   isMuted: () => boolean;
   setNativeControls: (visible: boolean) => void;
+  /** Per-viewer Drive quality switch, local-only (see SyncController.setDriveQuality). */
+  setDriveQuality: (itag: string | null) => void;
 }
 
 export function useSyncEngine(containerRef: RefObject<HTMLDivElement | null>): {
@@ -50,6 +53,8 @@ export function useSyncEngine(containerRef: RefObject<HTMLDivElement | null>): {
   resume: () => void;
   /** Per-viewer controls for UI chrome (cinema bar), never synchronized. */
   player: LocalPlayerFacade;
+  /** null when the current provider offers no quality options to pick between. */
+  driveQuality: DriveQualityInfo | null;
 } {
   const syncState = useRoomStore((s) => s.syncState);
   const canControl = useRoomStore((s) => canSelfControl(s));
@@ -58,6 +63,7 @@ export function useSyncEngine(containerRef: RefObject<HTMLDivElement | null>): {
   const [driveFallback, setDriveFallback] = useState<DriveFallbackReason | null>(null);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [phase, setPhase] = useState<ControllerPhase>('loading');
+  const [driveQuality, setDriveQualityState] = useState<DriveQualityInfo | null>(null);
   const controllerRef = useRef<SyncController | null>(null);
 
   /* One controller per media item (or when control rights change the
@@ -69,6 +75,7 @@ export function useSyncEngine(containerRef: RefObject<HTMLDivElement | null>): {
     setDriveFallback(null);
     setAutoplayBlocked(false);
     setPhase('loading');
+    setDriveQualityState(null);
     if (!container || !media) return;
 
     const controller = new SyncController({
@@ -88,6 +95,7 @@ export function useSyncEngine(containerRef: RefObject<HTMLDivElement | null>): {
           .toast(reason === 'unknown' ? 'info' : 'error', DRIVE_FALLBACK_TEXT[reason], 'drive-fallback');
       },
       onAutoplayBlocked: () => setAutoplayBlocked(true),
+      onDriveQuality: setDriveQualityState,
       onTranscodeStart: () => {
         useRoomStore
           .getState()
@@ -130,9 +138,10 @@ export function useSyncEngine(containerRef: RefObject<HTMLDivElement | null>): {
       setMuted: (m) => controllerRef.current?.setMuted(m),
       isMuted: () => controllerRef.current?.isMuted() ?? false,
       setNativeControls: (v) => controllerRef.current?.setNativeControls(v),
+      setDriveQuality: (itag) => void controllerRef.current?.setDriveQuality(itag),
     }),
     [],
   );
 
-  return { driveFallback, playerReady: phase === 'ready', autoplayBlocked, resume, player };
+  return { driveFallback, playerReady: phase === 'ready', autoplayBlocked, resume, player, driveQuality };
 }

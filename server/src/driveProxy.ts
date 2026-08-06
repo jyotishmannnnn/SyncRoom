@@ -29,6 +29,11 @@ import {
  */
 
 const DRIVE_ID = /^[A-Za-z0-9_-]{10,}$/;
+/** Google's preview-transcode itags: 37=1080p, 22=720p, 18=360p. */
+const VALID_ITAG = /^\d{1,3}$/;
+
+/** Response headers the client-side quality picker reads off `/drive/:id`. */
+export const QUALITY_HEADERS = ['X-Drive-Source', 'X-Drive-Itag', 'X-Drive-Available-Itags'];
 
 /** Upstream headers worth forwarding so the browser can seek and cache. */
 const PASS_HEADERS = [
@@ -79,13 +84,19 @@ export async function driveProxy(
     res.status(400).json({ error: 'Invalid Drive file id.' });
     return;
   }
+  // Only meaningful when Google serves this file via its preview transcode
+  // (source='stream'); the direct-download path has exactly one rendition
+  // (the original upload) and ignores this. Malformed/unknown values just
+  // fall back to the best available itag inside driveClient, never an error.
+  const rawItag = req.query.itag;
+  const itag = typeof rawItag === 'string' && VALID_ITAG.test(rawItag) ? rawItag : undefined;
 
   const controller = new AbortController();
   res.on('close', () => controller.abort());
 
   let media;
   try {
-    media = await openDriveMedia(id, req.headers.range, controller.signal);
+    media = await openDriveMedia(id, req.headers.range, controller.signal, itag);
   } catch (err) {
     if (res.headersSent || controller.signal.aborted) return;
     if (err instanceof DriveError) {
@@ -119,6 +130,7 @@ export async function driveProxy(
         req.headers.range,
         controller.signal,
         `unplayable container .${ext}`,
+        itag,
       );
       console.log(`[drive] ${id}: state=UNPLAYABLE ✓ preview stream open, serving H.264 MP4 directly`);
     } catch (err) {
@@ -150,6 +162,15 @@ export async function driveProxy(
   res.setHeader('Content-Type', mime ?? upstream.headers.get('content-type') ?? 'video/mp4');
   if (!res.getHeader('accept-ranges')) res.setHeader('Accept-Ranges', 'bytes');
   res.setHeader('Cache-Control', 'private, max-age=3600');
+
+  // Tells the client-side quality menu what's actually selectable for THIS
+  // file: 'download' → one rendition (the original upload), no picker to
+  // show; 'stream' → whichever of Google's 1080p/720p/360p renditions exist.
+  res.setHeader('X-Drive-Source', media.source);
+  if (media.itag) res.setHeader('X-Drive-Itag', media.itag);
+  if (media.availableItags?.length) {
+    res.setHeader('X-Drive-Available-Itags', media.availableItags.join(','));
+  }
 
   const body = Readable.fromWeb(upstream.body as unknown as NodeWebReadableStream<Uint8Array>);
   body.on('error', () => res.destroy());

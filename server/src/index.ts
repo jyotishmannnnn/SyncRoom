@@ -9,9 +9,9 @@ import { LIMITS } from '@syncroom/shared';
 import type { AppServer } from './handlers';
 import { registerHandlers } from './handlers';
 import { RoomManager } from './roomManager';
-import { driveProxy } from './driveProxy';
+import { driveProxy, QUALITY_HEADERS } from './driveProxy';
 import { resolveFfmpeg, TranscodeError, transcodeManager } from './transcode';
-import { makeOriginCheck, parseAllowedOrigins } from './cors';
+import { isOriginAllowed, makeOriginCheck, parseAllowedOrigins } from './cors';
 import { config } from './config';
 import { ConnectionGate } from './connectionGate';
 
@@ -47,6 +47,16 @@ app.get('/healthz', (_req, res) => {
 // itself streams (never buffers the whole file) and aborts on client close.
 let activeDriveStreams = 0;
 app.get('/drive/:id', (req: Request, res: Response, next: NextFunction) => {
+  // Same-origin (single-service deploy) needs nothing extra. Split deploys
+  // (SPA on a CDN, this box for media) need these two so the client-side
+  // quality picker's cross-origin fetch can read the X-Drive-* headers below,
+  // reusing the same origin allow-list sockets already trust.
+  const origin = req.headers.origin;
+  if (origin && isOriginAllowed(origin, ALLOWED_ORIGINS)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Expose-Headers', QUALITY_HEADERS.join(', '));
+  }
   if (activeDriveStreams >= config.maxDriveStreams) {
     res.status(503).set('Retry-After', '5').json({ error: 'Server busy, please retry shortly.' });
     return;
