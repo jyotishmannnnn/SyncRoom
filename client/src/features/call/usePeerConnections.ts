@@ -43,31 +43,36 @@ let turnWarningLogged = false;
 
 function iceServers(): RTCIceServer[] {
   const servers: RTCIceServer[] = [
-    { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+    {
+      urls: [
+        'stun:stun.relay.metered.ca:80',
+      ],
+    },
   ];
-  const turnUrl = import.meta.env.VITE_TURN_URL as string | undefined;
-  if (turnUrl) {
-    const urls = turnUrl
-      .split(',')
-      .map((u) => u.trim())
-      .filter(Boolean);
-    if (urls.length > 0) {
-      servers.push({
-        urls,
-        username: (import.meta.env.VITE_TURN_USERNAME as string | undefined) ?? '',
-        credential: (import.meta.env.VITE_TURN_CREDENTIAL as string | undefined) ?? '',
-      });
-    }
+
+  const turnUsername = import.meta.env.VITE_TURN_USERNAME as string | undefined;
+  const turnCredential = import.meta.env.VITE_TURN_CREDENTIAL as string | undefined;
+
+  if (turnUsername && turnCredential) {
+    servers.push({
+      urls: [
+        'turn:global.relay.metered.ca:80',
+        'turn:global.relay.metered.ca:80?transport=tcp',
+        'turn:global.relay.metered.ca:443',
+        'turns:global.relay.metered.ca:443?transport=tcp',
+      ],
+      username: turnUsername,
+      credential: turnCredential,
+    });
   } else if (!turnWarningLogged) {
-    // Without a TURN relay, ~10-15% of pairs (symmetric NAT, strict corporate
-    // firewalls, some CGNAT) can never form a direct or srflx path and calls
-    // will silently never connect. Surface it once instead of failing silently.
     turnWarningLogged = true;
+
     console.warn(
-      '[webrtc] VITE_TURN_URL is not set — calls between peers behind strict/symmetric ' +
-        'NATs will fail to connect. See docs/DEPLOYMENT.md#turn-recommended-for-production.',
+      '[webrtc] TURN credentials are not configured — calls between peers behind ' +
+      'strict/symmetric NATs may fail to connect.',
     );
   }
+
   return servers;
 }
 
@@ -201,8 +206,22 @@ export function usePeerConnections(options: {
         debug("[SIGNAL STATE]", peerId, pc.signalingState);
       };
 
-      pc.onconnectionstatechange = () => {
+      pc.onconnectionstatechange = async () => {
         debug("[CONNECTION STATE]", peerId, pc.connectionState);
+
+        if (pc.connectionState === "connected") {
+          const stats = await pc.getStats();
+
+          stats.forEach((report) => {
+            if (report.type === "candidate-pair" && report.state === "succeeded") {
+              debug("[SELECTED ICE PAIR]", {
+                localCandidateId: report.localCandidateId,
+                remoteCandidateId: report.remoteCandidateId,
+                nominated: report.nominated,
+              });
+            }
+          });
+        }
       };
       // A peer whose connection never recovers (network drop, `disconnected`
       // that never resolves to `failed`) would otherwise show a permanently
@@ -253,7 +272,15 @@ export function usePeerConnections(options: {
 
       pc.onicecandidate = (ev): void => {
         debug("[ICE OUT]", ev.candidate);
+
         if (ev.candidate) {
+          debug("[ICE CANDIDATE TYPE]", {
+            type: ev.candidate.type,
+            protocol: ev.candidate.protocol,
+            address: ev.candidate.address,
+            port: ev.candidate.port,
+          });
+
           socket.emit('signal', {
             to: peerId,
             from: selfId ?? '',
@@ -261,7 +288,6 @@ export function usePeerConnections(options: {
           });
         }
       };
-
       pc.oniceconnectionstatechange = (): void => {
         debug("[ICE STATE]", peerId, pc.iceConnectionState);
         const state = pc.iceConnectionState;
