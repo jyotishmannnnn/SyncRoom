@@ -7,6 +7,8 @@ import type { PeerStats } from '@/features/call/useCallStats';
 export interface VideoTileProps {
   stream: MediaStream | null;
   name: string;
+  /** Stable id of the participant this tile renders, exposed as a data attribute (e.g. for e2e tests). */
+  participantId?: string;
   isSelf?: boolean;
   isHost?: boolean;
   micOn?: boolean;
@@ -23,6 +25,7 @@ const qualityColor = { good: 'bg-success', fair: 'bg-warning', poor: 'bg-danger'
 export function VideoTile({
   stream,
   name,
+  participantId,
   isSelf = false,
   isHost = false,
   micOn = true,
@@ -126,6 +129,7 @@ export function VideoTile({
 
   return (
     <div
+      data-participant-id={participantId}
       className={cn(
         'group relative overflow-hidden rounded-2xl bg-surface-overlay',
         'shadow-lg ring-1 ring-line/60 animate-scale-in',
