@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Debug host value
+        run: echo "HOST is ${{ secrets.HOST }}"
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.2
         with:
